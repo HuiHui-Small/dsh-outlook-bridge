@@ -1,23 +1,86 @@
 # Outlook Bridge for DeepSeek Harness
 
-Outlook mail and calendar inside DeepSeek Harness. The plugin includes folder and unread views, inline replies, bulk mark as read, a monthly calendar, and AI-assisted mail summaries and drafts.
+在 DeepSeek Harness 侧栏打开 Outlook，集中查看邮件、处理未读消息和管理日程。配置默认模型后，还可以解读邮件并生成可编辑的回复草稿。
 
-## Install and connect
+[v0.3.0 发布页](https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/tag/v0.3.0) · [功能介绍](#功能介绍) · [安装](#安装) · [连接账户](#连接-outlook-账户) · [使用方法](#使用方法)
 
-Install the bundle from a supported Harness plugin source, then open **Outlook** in the sidebar. The panel can show demo data before an account is connected.
+## 功能介绍
 
-For your own Microsoft account, register an application in Microsoft Entra and choose the account types you intend to support. Enter its application ID and tenant in Outlook Bridge settings. Enable public client flows for device-code sign-in. If you use the authorization-code flow, register the native-client redirect URI shown by the plugin. Follow your organization's Microsoft consent requirements.
+| 功能 | 可以做什么 |
+| --- | --- |
+| 邮件 | 浏览文件夹和「重点 / 其他 / 全部」列表，写邮件、回复、归档或删除。侧栏图标显示收件箱未读数。 |
+| 一键已读 | 将当前文件夹的未读邮件批量标为已读，包括尚未加载到列表里的邮件。 |
+| AI 邮件助手 | 提炼邮件概要、待处理事项和回复建议，或按你给出的要点生成回复草稿。 |
+| Outlook 日历 | 在月视图切换和筛选日历，新建、编辑、拖动或删除可写日历中的日程。 |
+| 欢迎页天气 | 未选中邮件时，显示所选地点的今日天气和温度范围，支持使用当前位置或手动搜索城市。 |
 
-The plugin requests delegated Microsoft Graph permissions for the user profile, reading and updating mail, sending mail, managing calendar events, and supported To Do accounts, along with offline access. See [Microsoft identity platform documentation](https://learn.microsoft.com/en-us/entra/identity-platform/).
+## 安装
 
-## Where data goes
+安装包已在 DeepSeek Harness 桌面端 `0.2.2-rc.1` 的独立配置中验证安装和启动。安装后可先用演示邮件查看界面。
 
-Microsoft Graph requests run on the local Harness host. Tokens and connection settings are stored in the host's Outlook Bridge data directory. The UI requests mail and calendar information through the local host.
+1. 打开 DeepSeek Harness，进入左侧栏的 **插件 → 添加插件**。
+2. 将下面的 GitHub Release 安装包地址粘贴到 **包名或地址**，然后点 **安装**。
 
-If you use an AI action, the selected email or typed instruction is sent to the model configured in Harness. Suggested replies open as editable drafts. You send them from the compose or reply controls.
+   ```text
+   https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/download/v0.3.0/dsh-outlook-bridge-0.3.0.tgz
+   ```
 
-Weather requests use [Open-Meteo](https://open-meteo.com/). When you use device location, approximate coordinates are used to request weather and to look up the city or district with [BigDataCloud](https://www.bigdatacloud.com/geocoding-apis/free-reverse-geocode-to-city-api). You can also choose a city manually.
+3. 安装完成后点 **立即启用**，再从左侧栏进入 **Outlook**。如果 Harness 提示重启，退出并重新打开应用。
 
-## License
+## 连接 Outlook 账户
 
-MIT. Outlook and DeepSeek Harness are independent products. This is a community plugin.
+使用个人 Outlook.com 或 Hotmail 邮箱时，建议先按下文注册自己的 Microsoft Entra 应用。工作或学校账户的授权取决于组织的 Microsoft 365 策略。
+
+1. 在 Outlook 面板点击 **连接 Outlook**，按提示生成设备代码并打开微软登录页。
+2. 在微软页面输入设备代码，登录并同意授权。返回 Harness，等待面板加载你的邮箱。
+3. 如果选择网页授权方式，登录后按面板提示复制浏览器跳转后的完整地址，粘贴到插件里，再点 **完成登录**。
+
+### 配置自己的 Microsoft Entra 应用
+
+1. 在 [Microsoft Entra 管理中心](https://entra.microsoft.com/) 打开 **应用注册 → 新注册**，选择支持你的 Microsoft 账户类型。个人邮箱请选择包含个人 Microsoft 账户的选项。
+2. 复制应用的 **应用程序（客户端）ID**。在应用的 **身份验证** 设置中启用 **允许公共客户端流**，用于设备代码登录。若使用网页授权，在 **移动和桌面应用程序** 平台注册重定向 URI `https://login.microsoftonline.com/common/oauth2/nativeclient`。
+3. 打开插件的 **Outlook → 设置**，填入客户端 ID。仅支持个人账户的应用，租户可填 `consumers`。同时支持组织和个人账户时可填 `common`。单租户组织应用请填对应的租户 ID。
+4. 保存设置后重新连接。组织要求管理员同意时，请由租户管理员处理。可参阅 [Microsoft 设备代码登录文档](https://learn.microsoft.com/zh-cn/entra/identity-platform/v2-oauth2-device-code)。
+
+## 使用方法
+
+### 读邮件和回复
+
+点开邮件后，正文显示在右侧。点击正文下方的 **回复** 展开编辑区，原文仍在上方。邮件列表和文件夹支持右键操作。要清理未读角标，先打开目标文件夹，再点击顶部的 **一键已读**。
+
+### 用 AI 解读和起草邮件
+
+先在 Harness 的模型设置中配置默认模型，再打开一封邮件。
+
+1. 点 **AI 阅读邮件** 查看概要、需要处理的事项和回复建议。
+2. 点 **AI 快速回复** 生成草稿。也可以先展开回复，在 **回复要点** 填入一句要求，例如「感谢对方，说明周五前给出结果」。
+3. 在正文下方检查并修改草稿，确认后点击 **发送回复**。
+
+### 安排日程
+
+切换到 **日历**，用左侧的小日历跳转日期，勾选要显示的日历。点 **新事件** 或双击某天，填写标题、时间、位置等信息并保存。已有日程可以通过右键菜单编辑或删除，也可以拖到月视图的其他日期来调整时间。
+
+### 查看天气
+
+在邮件页关闭右侧正在阅读的邮件，即可看到欢迎页。点击 **使用当前位置** 并允许定位，或通过 **选择城市** 搜索地点。设置过地点后，该按钮会显示为 **更换城市**。定位解析成功后，天气标题会显示对应的城市或区县。
+
+## 常见问题
+
+| 遇到的问题 | 处理方法 |
+| --- | --- |
+| 登录报 `AADSTS65002` | 注册自己的 Microsoft Entra 应用，在插件设置里填入客户端 ID，再重新授权。 |
+| 连接后仍显示演示邮件 | 在微软页面完成登录和同意，再返回 Outlook 面板刷新。 |
+| AI 按钮不可用 | 检查 Harness 是否配置了可用的默认模型。 |
+| 天气无法获取当前位置 | 允许应用定位，或通过城市搜索手动选择地点。 |
+
+## 权限与数据
+
+- 邮件和日程通过 Microsoft Graph 访问。插件请求用于资料读取、邮件读写和发送、日历读写以及受支持账户待办的委托权限，并用 `offline_access` 维持登录。连接设置和令牌保存在本机 Harness 的插件数据目录。
+- 主动使用 AI 功能时，相关邮件内容或输入的指令会发给 Harness 配置的模型服务。
+- 天气由 [Open-Meteo](https://open-meteo.com/) 提供。使用设备定位时，经纬度用于查询天气，并通过 [BigDataCloud](https://www.bigdatacloud.com/geocoding-apis/free-reverse-geocode-to-city-api) 解析地点名称。
+
+## 许可证
+
+[MIT](LICENSE) · [更新记录](CHANGELOG.md)
+
+Outlook Bridge 是面向 DeepSeek Harness 的社区插件。
