@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Outlook mail & calendar",
+    "description": "Adds an Outlook entry under Context in the sidebar with an unread badge; it opens a mailbox column beside calendar and to-do, signing in with a Microsoft account on the web — no Azure app registration."
+  }
+}

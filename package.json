@@ -1,0 +1,59 @@
+{
+  "name": "dsh-outlook-bridge",
+  "version": "0.3.0",
+  "description": "Outlook mail and calendar for DeepSeek Harness, with unread badges, bulk mark as read, and AI-assisted email drafts.",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "author": "YG",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "outlook",
+    "microsoft-graph",
+    "mail",
+    "calendar"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    },
+    "compatibility": {
+      "dshReleases": {
+        "0.2.1": "compatible",
+        "0.2.2": "compatible"
+      }
+    }
+  }
+}

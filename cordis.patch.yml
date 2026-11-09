@@ -1,0 +1,3 @@
+- insert:
+    - id: outlook-bridge
+      name: dsh-outlook-bridge
