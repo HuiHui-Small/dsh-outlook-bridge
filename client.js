@@ -73,15 +73,51 @@ window.__ModuleLoader__.load({
         'calendar.tomorrow': '明天',
         'calendar.yesterday': '昨天',
         'calendar.allDay': '全天',
-        'todo.title': '待办',
-        'todo.empty': '没有未完成的待办',
+        'todo.title': '计划',
+        'todo.empty': '没有未完成的计划',
+        'todo.summary': '{count} 项未完成',
+        'todo.overdue': '已逾期',
+        'todo.noOverdue': '没有逾期的计划',
+        'todo.all': '所有项目',
+        'todo.categories': '分类',
+        'todo.categoryFilter': '按分类或计划清单筛选',
+        'todo.completed': '已完成',
+        'todo.sortCompleted': '已完成计划排序',
+        'todo.sortCompletion': '完成时间',
+        'todo.sortCreation': '创建时间',
+        'todo.sortAscending': '按时间升序排列',
+        'todo.stale': '正在显示上次同步的计划。',
+        'todo.noCompleted': '暂无已完成的计划',
+        'todo.complete': '完成计划：{title}',
+        'todo.restore': '恢复计划：{title}',
+        'todo.menuComplete': '标记为已完成',
+        'todo.menuRestore': '恢复为未完成',
+        'todo.menuDue': '截止日期设为{day}',
+        'todo.menuClearDue': '清除截止日期',
+        'todo.menuCopyTitle': '复制计划标题',
+        'todo.menuDelete': '删除计划',
+        'todo.dueDate': '截止日期',
+        'todo.dragHint': '拖动卡片调整日期或分类，右键查看更多操作',
+        'todo.dropNoDate': '放下后清除截止日期',
+        'todo.dropDate': '放下后将截止日期设为 {date}',
+        'todo.dropCategory': '放下后归入「{name}」',
         'todo.due': '截止 {time}',
-        'todo.unsupported': '个人 Microsoft 账户不支持微软待办（To Do）接口；换成工作/学校账户即可显示。',
+        'todo.list': '计划清单',
+        'todo.noLists': '暂无可用清单',
+        'todo.chooseList': '请选择清单',
+        'todo.listMissing': 'Microsoft To Do 找不到所选清单。请刷新或重新选择清单后再添加。',
+        'todo.taskMissing': 'Microsoft To Do 找不到这项计划。请刷新列表后重试。',
+        'todo.taskGone': 'Microsoft To Do 已找不到这项计划，列表已刷新。',
+        'todo.new': '输入计划标题',
+        'todo.newWithDate': '输入计划标题，可在末尾加 /月.日 或 /年份.月.日',
+        'todo.dateHint': '在标题末尾输入 /月.日 或 /年份.月.日 设置截止日期，省略年份时按今年计算。',
+        'todo.add': '添加计划',
+        'todo.demo': '正在查看演示计划。连接 Outlook 后可新建计划并同步到 Microsoft To Do。',
         'settings.title': '连接设置',
         'settings.clientId': 'Microsoft 应用（客户端）ID（可选）',
         'settings.clientSecret': '客户端密码（可选，机密客户端用）',
         'settings.clientSecretHint': '如果应用里找不到「允许公共客户端流」，就改走机密客户端：左侧「证书和密码」→ 新客户端密码 → 添加 → 立刻复制那串「值」，粘到这里。留空表示不修改。',
-        'settings.clientIdHint': '微软禁止内置（第一方）客户端读取个人账户邮件，会直接报 AADSTS65002。免费注册一个自己的应用即可：portal.azure.com → 应用注册 → 新注册（账户类型选「个人 Microsoft 账户」）→ 复制「应用程序(客户端) ID」→ 在「身份验证」里勾选「允许公共客户端流」。把 ID 填到这里保存。',
+        'settings.clientIdHint': '个人邮箱遇到 AADSTS65002 时，可以在 Entra 注册自己的应用，把「应用程序（客户端）ID」填到这里。注册和启用公共客户端流的步骤见顶部「流程指引」。',
         'settings.tenant': '租户',
         'settings.demo': '未连接时显示示例数据',
         'settings.mailTop': '邮件条数',
@@ -103,17 +139,42 @@ window.__ModuleLoader__.load({
         'cal.loading': '加载中…',
         'tab.mail': '邮件',
         'tab.calendar': '日历',
+        'tab.todo': '计划',
         'tab.reply': '回复',
         'tab.appearance': '界面',
+        'guide.open': '流程指引',
+        'guide.title': '连接 Outlook 的流程指引',
+        'guide.intro': '请用自己的 Microsoft 账号登录。若内置登录遇到 AADSTS65002，可按下面的步骤配置自己的 Entra 应用。',
+        'guide.register': '注册 Entra 应用',
+        'guide.registerHelp': '在 Microsoft Entra 管理中心打开「Entra ID → 应用注册 → 新注册」。个人邮箱请选择支持个人 Microsoft 账户的类型。注册后，在「概述」复制应用程序（客户端）ID。',
+        'guide.openEntra': '打开 Entra 管理中心',
+        'guide.publicClient': '启用公共客户端流',
+        'guide.publicClientHelp': '在「Entra ID → 应用注册」列表里，点击第 1 步创建的应用名称，进入应用详情。列表为空时，先完成新注册，或切换到创建该应用的目录。进入详情后，在左侧「管理」下打开「身份验证（预览版） / Authentication (Preview)」，再点「设置」选项卡。如果显示的是「身份验证」，在页面下方找「高级设置」。开启「允许公共客户端流」并保存，设备代码登录时可将客户端密钥留空。',
+        'guide.configure': '填写插件设置',
+        'guide.configureHelp': '粘贴自己的客户端 ID。租户按注册时选择的账户类型填写。仅个人账户填 consumers，同时支持组织和个人账户填 common，单租户组织应用填目录（租户）ID。填好后点「保存」。',
+        'guide.openSettings': '打开插件设置',
+        'guide.authorize': '登录并授权',
+        'guide.authorizeHelp': '点击连接或重新授权，在微软登录页按提示输入设备代码，用自己的邮箱账号登录并同意授权，然后返回 Outlook 面板。',
         'ui.panel': '主面板',
         'ui.mail': '邮件列表',
-        'ui.calendar': '日历',
-        'ui.todo': '待办',
-        'ui.reply': '回复整理',
-        'ui.opacity': '透明度',
+        'ui.calendar': '日历月视图',
+        'ui.calendarList': '日历列表',
+        'ui.todoCreate': '计划添加区',
+        'ui.todoCategories': '分类',
+        'ui.todoCompleted': '已完成',
+        'ui.todoAll': '所有项目',
+        'ui.todoToday': '今天',
+        'ui.todoTomorrow': '明天',
+        'ui.mailFolders': '邮件文件夹',
+        'ui.mailReading': '邮件阅读区',
+        'ui.toolbar': '工具栏',
+        'ui.aiBar': 'AI 输入栏',
+        'ui.header': '顶部栏',
+        'ui.opacity': '不透明度',
         'ui.blur': '模糊度',
         'ui.title': '界面设置',
-        'ui.hint': '按区域单独调节透明度与模糊度，立刻生效；确认后点保存。',
+        'ui.surfaces': '主界面',
+        'ui.hint': '按区域调整不透明度和模糊度。改动即时预览，满意后保存外观。',
         'ui.save': '保存外观',
         'ui.reset': '恢复默认',
         'ui.saved': '外观已保存',
@@ -213,15 +274,51 @@ window.__ModuleLoader__.load({
         'calendar.tomorrow': 'Tomorrow',
         'calendar.yesterday': 'Yesterday',
         'calendar.allDay': 'All day',
-        'todo.title': 'To-do',
+        'todo.title': 'Plan',
         'todo.empty': 'Nothing outstanding',
+        'todo.summary': '{count} open',
+        'todo.overdue': 'Overdue',
+        'todo.noOverdue': 'No overdue plans',
+        'todo.all': 'All items',
+        'todo.categories': 'Categories',
+        'todo.categoryFilter': 'Filter by category or task list',
+        'todo.completed': 'Completed',
+        'todo.sortCompleted': 'Sort completed plans',
+        'todo.sortCompletion': 'Completion time',
+        'todo.sortCreation': 'Creation time',
+        'todo.sortAscending': 'Sort oldest first',
+        'todo.stale': 'Showing plans from the last sync.',
+        'todo.noCompleted': 'No completed plans yet',
+        'todo.complete': 'Complete plan: {title}',
+        'todo.restore': 'Restore plan: {title}',
+        'todo.menuComplete': 'Mark as completed',
+        'todo.menuRestore': 'Restore as incomplete',
+        'todo.menuDue': 'Set due date to {day}',
+        'todo.menuClearDue': 'Clear due date',
+        'todo.menuCopyTitle': 'Copy plan title',
+        'todo.menuDelete': 'Delete plan',
+        'todo.dueDate': 'Due date',
+        'todo.dragHint': 'Drag a card to change its due date or category. Right-click for more actions.',
+        'todo.dropNoDate': 'Drop to clear the due date',
+        'todo.dropDate': 'Drop to set the due date to {date}',
+        'todo.dropCategory': 'Drop to assign “{name}”',
         'todo.due': 'Due {time}',
-        'todo.unsupported': 'Personal Microsoft accounts have no To Do API; sign in with a work or school account to see tasks.',
+        'todo.list': 'Task list',
+        'todo.noLists': 'No task lists available',
+        'todo.chooseList': 'Choose a list',
+        'todo.listMissing': 'Microsoft To Do could not find the selected list. Refresh or choose a list before adding the task again.',
+        'todo.taskMissing': 'Microsoft To Do could not find this task. Refresh the list and try again.',
+        'todo.taskGone': 'Microsoft To Do could not find this task. The list has been refreshed.',
+        'todo.new': 'Enter a task title',
+        'todo.newWithDate': 'Enter a task title, optionally ending in /month.day or /year.month.day',
+        'todo.dateHint': 'Add /month.day or /year.month.day to the end of the title to set a due date. If you omit the year, the current year is used.',
+        'todo.add': 'Add task',
+        'todo.demo': 'Showing demo tasks. Connect Outlook to add tasks and sync them to Microsoft To Do.',
         'settings.title': 'Connection settings',
         'settings.clientId': 'Microsoft app (client) ID - optional',
         'settings.clientSecret': 'Client secret (optional, confidential client)',
         'settings.clientSecretHint': 'If the app has no "allow public client flows" switch, use a confidential client instead: Certificates & secrets -> New client secret -> copy the Value -> paste it here. Leave empty to keep the stored one.',
-        'settings.clientIdHint': 'Microsoft blocks its built-in (first-party) client from reading personal-account mail with AADSTS65002. Register a free app: portal.azure.com -> App registrations -> New registration (personal Microsoft accounts) -> copy the Application (client) ID -> Authentication -> allow public client flows. Paste the ID here.',
+        'settings.clientIdHint': 'If a personal mailbox returns AADSTS65002, register your own Entra app and enter its Application (client) ID here. See the Setup guide for registration and public client flow settings.',
         'settings.tenant': 'Tenant',
         'settings.demo': 'Show sample data while disconnected',
         'settings.mailTop': 'Messages',
@@ -243,17 +340,42 @@ window.__ModuleLoader__.load({
         'cal.loading': 'Loading…',
         'tab.mail': 'Mail',
         'tab.calendar': 'Calendar',
+        'tab.todo': 'Plan',
         'tab.reply': 'Reply',
         'tab.appearance': 'Interface',
+        'guide.open': 'Setup guide',
+        'guide.title': 'Connect Outlook',
+        'guide.intro': 'Sign in with your own Microsoft account. If the built-in sign-in returns AADSTS65002, follow these steps to configure your own Entra app.',
+        'guide.register': 'Register an Entra app',
+        'guide.registerHelp': 'In the Microsoft Entra admin center, go to Entra ID → App registrations → New registration. For a personal mailbox, choose an account type that supports personal Microsoft accounts. Copy the Application (client) ID from Overview.',
+        'guide.openEntra': 'Open the Entra admin center',
+        'guide.publicClient': 'Enable public client flows',
+        'guide.publicClientHelp': 'In Entra ID → App registrations, select the app you created in step 1 to open its details. If the list is empty, complete the registration or switch to the directory where you created the app. Under Manage, open Authentication (Preview) and select Settings. If you see Authentication, look under Advanced settings. Enable Allow public client flows and save. Leave the client secret blank for device code sign-in.',
+        'guide.configure': 'Configure the plugin',
+        'guide.configureHelp': 'Paste your client ID. Use consumers for personal accounts only, common for both organizational and personal accounts, or the Directory (tenant) ID for a single-tenant organizational app. Select Save.',
+        'guide.openSettings': 'Open plugin settings',
+        'guide.authorize': 'Sign in and authorize',
+        'guide.authorizeHelp': 'Select Connect or Reauthorize. Follow the Microsoft sign-in page’s device code instructions, sign in with your own mailbox account and grant consent, then return to Outlook.',
         'ui.panel': 'Main panel',
         'ui.mail': 'Mail list',
-        'ui.calendar': 'Calendar',
-        'ui.todo': 'To-do',
-        'ui.reply': 'Reply',
+        'ui.calendar': 'Calendar month view',
+        'ui.calendarList': 'Calendar list',
+        'ui.todoCreate': 'Add plan area',
+        'ui.todoCategories': 'Categories',
+        'ui.todoCompleted': 'Completed',
+        'ui.todoAll': 'All items',
+        'ui.todoToday': 'Today',
+        'ui.todoTomorrow': 'Tomorrow',
+        'ui.mailFolders': 'Mail folders',
+        'ui.mailReading': 'Mail reading pane',
+        'ui.toolbar': 'Toolbar',
+        'ui.aiBar': 'AI input bar',
+        'ui.header': 'Header',
         'ui.opacity': 'Opacity',
         'ui.blur': 'Blur',
         'ui.title': 'Interface settings',
-        'ui.hint': 'Tune opacity and blur per region; changes apply immediately, press Save to keep them.',
+        'ui.surfaces': 'Main interface',
+        'ui.hint': 'Adjust opacity and blur by region. Changes preview immediately. Save to keep them.',
         'ui.save': 'Save appearance',
         'ui.reset': 'Reset',
         'ui.saved': 'Appearance saved',
@@ -357,6 +479,14 @@ window.__ModuleLoader__.load({
         store.inflight = (async () => {
           try {
             const data = await api(`/snapshot${force ? '?refresh=1' : ''}`)
+            const previous = store.snapshot
+            if (data.taskError && data.connected && previous?.connected &&
+                data.account?.mail && data.account.mail === previous.account?.mail &&
+                previous.taskLists?.length && (!previous.taskError || previous.taskStale)) {
+              data.taskLists = previous.taskLists
+              data.tasks = previous.tasks
+              data.taskStale = true
+            }
             store.snapshot = data
             store.error = null
           } catch (error) {
@@ -403,7 +533,11 @@ window.__ModuleLoader__.load({
       } catch {
         data = null
       }
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
+      if (!res.ok) {
+        const error = new Error(data?.error || `HTTP ${res.status}`)
+        error.status = res.status
+        throw error
+      }
       if (data && data.ok === false) throw new Error(data.error || 'request failed')
       return data
     }
@@ -497,17 +631,6 @@ window.__ModuleLoader__.load({
       return `${date.getMonth() + 1}/${date.getDate()}`
     }
 
-    function fmtDue(date, t) {
-      if (!date) return ''
-      const today = startOfDay(new Date())
-      const target = startOfDay(date)
-      const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000)
-      const time = fmtTime(date)
-      if (diff === 0) return `${t('calendar.today')} ${time}`
-      if (diff === 1) return `${t('calendar.tomorrow')} ${time}`
-      return `${date.getMonth() + 1}/${date.getDate()} ${time}`
-    }
-
     function initial(name) {
       const text = String(name || '?').trim()
       return text ? text.slice(0, 1).toUpperCase() : '?'
@@ -555,7 +678,7 @@ window.__ModuleLoader__.load({
     }
 
     const CSS = `
-.ob-root{display:flex;flex-direction:column;height:100%;min-height:0;color:var(--dsw-alias-label-primary);font-size:13px;line-height:1.45}
+.ob-root{position:relative;display:flex;flex-direction:column;height:100%;min-height:0;color:var(--dsw-alias-label-primary);font-size:13px;line-height:1.45}
 .ob-head{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--dsw-alias-border-l1);flex:none;flex-wrap:wrap}
 .ob-head-mark{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2);flex:none}
 .ob-head-text{display:flex;flex-direction:column;min-width:0}
@@ -612,15 +735,67 @@ window.__ModuleLoader__.load({
 .ob-event-title{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ob-event-meta{font-size:11px;color:var(--dsw-alias-label-quaternary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ob-bar{width:2px;border-radius:2px;background:var(--dsw-alias-brand-primary);align-self:stretch;flex:none;opacity:.7}
-.ob-todo{display:flex;gap:9px;align-items:flex-start;padding:8px 12px;border-bottom:1px solid var(--dsw-alias-border-l1)}
-.ob-todo:last-child{border-bottom:0}
-.ob-check{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--dsw-alias-border-l2);background:transparent;flex:none;margin-top:1px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
-.ob-check:hover{border-color:var(--dsw-alias-brand-primary)}
-.ob-check.done{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}
+.ob-todo{display:flex;gap:9px;align-items:flex-start;padding:8px 12px;border-block-end:1px solid var(--ob-line,#ddd)}
+.ob-todo:hover{background:color-mix(in srgb,var(--ob-blue) 4%,transparent)}
+.ob-todo[draggable=true]{cursor:grab}
+.ob-todo[draggable=true]:active{cursor:grabbing}
+.ob-todo.ob-plan-dragging{opacity:.38}
+.ob-plan-grip{flex:none;color:var(--dsw-alias-label-tertiary,#777)}
 .ob-todo-main{min-width:0;flex:1}
 .ob-todo-title{font-size:12.5px;word-break:break-word}
-.ob-todo-title.done{text-decoration:line-through;color:var(--dsw-alias-label-tertiary)}
+.ob-todo-completed .ob-todo-title{text-decoration:line-through;color:var(--dsw-alias-label-secondary,#666)}
+.ob-todo-completion-time{display:flex;flex:none;flex-direction:column;align-self:center;text-align:center;white-space:nowrap;font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.3;opacity:.55}
 .ob-todo-meta{font-size:10.5px;color:var(--dsw-alias-label-quaternary);margin-top:1px}
+.ob-todo-page{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;overflow:auto}
+.ob-todo-page .ob-card{background:var(--ob-paper);border:0;border-radius:0}
+.ob-todo-page > :is(.ob-error,.ob-banner){flex:none;border-radius:0;border-block-end:1px solid var(--ob-line)}
+.ob-todo-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:none}
+.ob-todo-form label{display:flex;align-items:center;gap:8px;max-width:100%}
+.ob-todo-form select{min-width:0;max-width:210px}
+.ob-todo-form .ob-todo-input{flex:1 1 180px;min-width:0}
+.ob-todo-form input[type=date]{min-width:0;max-width:100%;box-sizing:border-box}
+.ob-todo-form input[type=date]:enabled{cursor:pointer;user-select:none}
+.ob-todo-due-row{display:flex;flex:0 0 100%;min-width:0;flex-wrap:wrap;align-items:center;gap:8px}
+.ob-todo-due-row .ob-btn[aria-pressed=true]{color:var(--ob-blue);border-color:var(--ob-blue);background:color-mix(in srgb,var(--ob-blue) 8%,transparent)}
+.ob-todo-page input[type=checkbox]{accent-color:var(--ob-blue,#0f6cbd)}
+.ob-plan-header{flex:none;display:grid;gap:10px;padding:12px;background:var(--ob-paper);border-block-end:2px solid var(--ob-line)}
+.ob-plan-heading{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:center;column-gap:12px}
+.ob-plan-heading h2{margin:0;font-size:38px;line-height:1.08}
+.ob-plan-heading-details{display:grid;gap:4px;min-width:0}
+.ob-plan-hints{display:flex;flex-wrap:wrap;gap:4px 22px}
+.ob-plan-summary{justify-self:start;padding:2px 7px;border:1px solid var(--ob-line,#dedede);border-radius:6px;font-size:12px;line-height:1.25;color:var(--dsw-alias-label-secondary,#555)}
+.ob-plan-grid{flex:1 0 290px;min-height:290px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
+.ob-plan-grid > :not(:last-child){border-inline-end:1px solid var(--ob-line)}
+.ob-plan-panel{min-width:0}
+.ob-plan-side{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);min-width:0;min-height:0}
+.ob-plan-side > .ob-plan-panel:first-child{border-block-end:1px solid var(--ob-line)}
+.ob-plan-panel .ob-card-head{justify-content:space-between}
+.ob-plan-sort{display:flex;align-items:center;gap:4px;min-width:0;max-width:65%;margin-inline-start:auto}
+.ob-plan-sort select,.ob-plan-sort-direction,.ob-plan-category-filter{box-sizing:border-box;height:25px;border:1px solid var(--ob-line);border-radius:5px;background:var(--ob-paper);color:inherit}
+.ob-plan-sort select,.ob-plan-category-filter{min-width:0;padding:0 5px;font:inherit;font-size:11px}
+.ob-plan-category-filter{max-width:65%;margin-inline-start:auto}
+.ob-plan-sort .ob-plan-sort-direction{flex:none;width:25px;padding:0;justify-content:center;font-size:14px}
+.ob-plan-sync-error{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.ob-plan-panel h3{margin:0;font-size:13px;font-weight:650}
+.ob-plan-panel .ob-count{padding:2px 7px;border-radius:8px;background:var(--ob-ground);font-variant-numeric:tabular-nums}
+.ob-todo-page .ob-plan-overdue{border-inline-start:3px solid var(--dsw-alias-state-error-primary,#b42318)}
+.ob-plan-category-filter :is(option,optgroup){color:var(--dsw-alias-label-primary,#242424)}
+.ob-plan-overdue :is(h3,.ob-plan-category-filter,.ob-count),.ob-plan-category-filter option[value=overdue]{color:var(--dsw-alias-state-error-primary,#b42318)}
+.ob-plan-panel.ob-plan-drop-hot{outline:2px solid var(--ob-blue,#0f6cbd);outline-offset:-2px}
+.ob-plan-drop-preview{pointer-events:none;opacity:.62;flex:none;padding:7px 12px;border:1px dashed var(--ob-blue,#0f6cbd);background:color-mix(in srgb,var(--ob-blue,#0f6cbd) 12%,var(--ob-paper))}
+.ob-plan-drop-preview strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ob-plan-drop-preview span,.ob-plan-drag-hint{font-size:11px;color:var(--dsw-alias-label-secondary,#555)}
+@container(max-width:1000px){
+  .ob-plan-grid{flex:none;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:280px}
+  .ob-plan-side{grid-row:span 2}
+  .ob-plan-grid > :not(:last-child){border-block-end:1px solid var(--ob-line)}
+  .ob-plan-grid > .ob-plan-panel{border-inline-end:0}
+  .ob-plan-grid > :last-child{grid-column:1/-1}
+}
+@container(max-width:570px){
+  .ob-plan-grid{grid-template-columns:minmax(0,1fr);grid-auto-rows:220px}
+  .ob-plan-grid > .ob-plan-side{border-inline-end:0}
+}
 .ob-tabs{display:flex;gap:4px;padding:6px 0 0;flex:none}
 .ob-tab{height:26px;padding:0 12px;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--dsw-alias-label-tertiary);font-size:12px;cursor:pointer}
 .ob-tab:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}
@@ -629,6 +804,15 @@ window.__ModuleLoader__.load({
 .ob-modal-mask{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.28);backdrop-filter:blur(2px)}
 .ob-modal{width:min(760px,92vw);max-height:82vh;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 18px 48px rgba(0,0,0,0.28)}
 .ob-modal-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;flex:none}
+.ob-guide-entry{display:flex;align-items:center;gap:8px}
+.ob-guide-dialog{box-sizing:border-box;width:min(600px,calc(100vw - 24px))}
+.ob-guide-body{min-height:0;overflow:auto;padding:0 4px 4px}
+.ob-guide-body p{margin:0;line-height:1.55;color:var(--dsw-alias-label-secondary,#555)}
+.ob-guide-steps{display:grid;gap:8px;margin:12px 0 0;padding:0;list-style:none}
+.ob-guide-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:10px;border:1px solid var(--dsw-alias-border-l1,#ddd);border-radius:9px}
+.ob-guide-number{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,#0f6cbd 12%,transparent);color:#0f6cbd;font-weight:700}
+.ob-guide-steps h3{margin:0 0 4px;font-size:13px;line-height:24px}
+.ob-guide-steps .ob-btn{margin-top:8px;text-decoration:none}
 .ob-cal-cell{cursor:pointer}
 .ob-modal-sm{width:min(380px,90vw)}
 .ob-form{display:flex;flex-direction:column;gap:8px}
@@ -681,16 +865,33 @@ window.__ModuleLoader__.load({
 .ob-cal-events{display:flex;flex-direction:column;gap:2px;min-height:0;overflow:hidden}
 .ob-cal-chip{font-size:10.5px;line-height:1.35;padding:2px 5px;border-left:3px solid var(--dsw-alias-brand-primary);border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dsw-alias-label-primary)}
 .ob-cal-more{font-size:10px;color:var(--dsw-alias-label-quaternary);padding-left:4px}
-.ob-ui-page{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto}
-.ob-ui-head{font-size:11.5px;color:var(--dsw-alias-label-tertiary)}
-.ob-surface-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.ob-surface-card{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;background:var(--dsw-alias-bg-layer-1)}
-.ob-surface-title{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600}
-.ob-surface-badge{font-size:11px;font-weight:500;color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-bg-layer-2);border-radius:6px;padding:1px 6px}
-.ob-slider{display:grid;grid-template-columns:52px 1fr 40px;align-items:center;gap:8px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}
-.ob-slider input[type=range]{width:100%;accent-color:var(--dsw-alias-brand-primary)}
-.ob-slider b{font-weight:500;text-align:right;color:var(--dsw-alias-label-tertiary)}
-.ob-ui-foot{display:flex;gap:8px}
+.ob-appearance-dialog{--ob-settings-paper:var(--dsw-alias-bg-overlay,#fff);--ob-settings-accent:#7b7073;--ob-settings-line:color-mix(in srgb,currentColor 13%,transparent);--ob-settings-muted:color-mix(in srgb,currentColor 7%,var(--ob-settings-paper));box-sizing:border-box;width:min(660px,100%);max-height:min(100%,720px);gap:0;padding:0;overflow:hidden;color:var(--dsw-alias-label-primary,#202020);background:color-mix(in srgb,var(--ob-settings-paper) 94%,currentColor)}
+.ob-appearance-dialog .ob-modal-head,.ob-ui-foot{padding:12px clamp(12px,4vw,22px);background:var(--ob-settings-paper)}
+.ob-appearance-dialog .ob-modal-head{border-bottom:1px solid var(--ob-settings-line)}
+.ob-appearance-dialog .ob-btn{min-height:32px;border-color:var(--ob-settings-line);font-weight:500}
+.ob-ui-page{display:flex;flex-direction:column;gap:16px;min-height:0;overflow:auto;padding:18px clamp(12px,4vw,22px) 20px}
+.ob-ui-kicker{color:var(--dsw-alias-label-secondary,#625b5d);font-size:10px;font-weight:700;letter-spacing:.16em}
+.ob-ui-head h2{margin:3px 0 4px;font-size:21px;line-height:1.35;font-weight:700}
+.ob-ui-head p{margin:0;font-size:12px;color:var(--dsw-alias-label-secondary,#555)}
+.ob-appearance-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.ob-appearance-tabs [aria-pressed=true]{background:var(--ob-settings-paper);border-color:var(--ob-settings-accent);box-shadow:0 1px 2px #0001;font-weight:650}
+.ob-surface-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+.ob-surface-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:16px;border:1px solid var(--ob-settings-line);border-radius:13px;background:var(--ob-settings-paper)}
+.ob-surface-title{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.ob-surface-title h3{flex:1;margin:0;font-size:13px;font-weight:700}
+.ob-surface-icon{display:grid;flex:none;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--ob-settings-muted);color:var(--ob-settings-accent)}
+.ob-surface-badge{flex:none;border-radius:7px;padding:2px 8px;background:var(--ob-settings-muted);font-size:11px;font-variant-numeric:tabular-nums}
+.ob-slider{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;column-gap:10px;font-size:12px}
+.ob-slider>span:first-child{grid-column:1 / -1;font-weight:600}
+.ob-slider input[type=range]{width:100%;min-width:0;height:22px;margin:0;cursor:pointer;accent-color:var(--ob-settings-accent)}
+.ob-slider b{font-size:11px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.ob-appearance-dialog :is(button,input):focus-visible{outline:2px solid var(--ob-settings-accent);outline-offset:2px}
+.ob-ui-foot{display:flex;flex:none;justify-content:flex-end;gap:8px;border-top:1px solid var(--ob-settings-line)}
+.ob-appearance-dialog .ob-ui-foot{flex-wrap:wrap;align-items:center}
+.ob-ui-feedback{flex:1;min-width:100px;overflow-wrap:anywhere;font-size:12px;color:var(--dsw-alias-label-secondary,#555)}
+.ob-ui-feedback[role=alert]{color:var(--dsw-alias-state-error-primary,#b42318)}
+.ob-appearance-dialog .ob-btn.primary{background:var(--ob-settings-accent);border-color:transparent}
+.ob-appearance-dialog .ob-btn.primary:hover:not(:disabled){background:#63595c}
 .ob-reply{display:flex;flex-direction:column;gap:10px;padding:12px;flex:1;min-height:0}
 .ob-reply-meta{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--dsw-alias-label-secondary)}
 .ob-reply-row{display:flex;gap:8px;align-items:baseline;min-width:0}
@@ -721,8 +922,8 @@ window.__ModuleLoader__.load({
 .ob-badge{position:absolute;top:-4px;right:-6px;min-width:14px;height:14px;padding:0 3px;border-radius:8px;background:var(--dsw-alias-state-error-primary);color:#fff;font-size:9px;line-height:14px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1.5px var(--dsw-specific-sidebar-fill);pointer-events:none}
 
 /* Outlook mail workspace: contiguous navigation, list and reading surfaces. */
-:is(.ob-outlook-mail,.ob-outlook-calendar){--ob-blue:#0f6cbd;--ob-line:var(--dsw-alias-border-l1,#dedede);--ob-paper:var(--dsw-alias-bg-layer-1,#fff);--ob-ground:var(--dsw-alias-bg-layer-2,#f5f5f5);font-family:"Segoe UI","Microsoft YaHei",sans-serif;container-type:inline-size}
-:is(.ob-outlook-mail,.ob-outlook-calendar) .ob-head{padding:8px 16px;gap:8px;background:#f3f3f3;border-bottom-color:var(--ob-line,#dedede)}
+:is(.ob-outlook-mail,.ob-outlook-calendar){--ob-blue:#0f6cbd;--ob-line:var(--dsw-alias-border-l1,#dedede);font-family:"Segoe UI","Microsoft YaHei",sans-serif;container-type:inline-size}
+:is(.ob-outlook-mail,.ob-outlook-calendar) .ob-head{padding:8px 16px;gap:8px;border-bottom-color:var(--ob-line,#dedede)}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-chip.ok{border-color:transparent;background:color-mix(in srgb,var(--ob-blue) 16%,transparent);color:var(--ob-blue)}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-btn.primary{background:var(--ob-blue);border-color:transparent;color:#fff}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-btn.primary:hover{background:color-mix(in srgb,var(--ob-blue) 88%,#000)}
@@ -735,8 +936,8 @@ window.__ModuleLoader__.load({
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-head .ob-tab{height:27px;min-width:60px;padding:0 14px;border:1px solid var(--ob-line);border-radius:5px;background:var(--ob-paper);color:var(--dsw-alias-label-secondary);box-shadow:0 1px 3px #00000012}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-head .ob-tab.on{color:var(--ob-blue);border-color:color-mix(in srgb,var(--ob-blue) 30%,var(--ob-line));background:var(--ob-paper);box-shadow:0 2px 5px #00000017;font-weight:600}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-head .ob-tab:hover{background:color-mix(in srgb,var(--ob-blue) 4%,var(--ob-paper));box-shadow:0 2px 5px #00000019}
-.ob-outlook-mail .ob-body>.ob-banner,.ob-outlook-mail .ob-body>.ob-error,.ob-outlook-mail .ob-body>.ob-connect{margin:8px 12px}
-.ob-mail-workspace{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;background:var(--ob-ground)}
+.ob-outlook-mail .ob-body>.ob-connect{margin:8px 12px}
+.ob-mail-workspace{display:flex;flex:1;flex-direction:column;min-height:0;min-width:0}
 .ob-commandbar{display:flex;align-items:center;gap:4px;min-height:48px;padding:0 8px;border-bottom:1px solid var(--ob-line);background:var(--ob-paper);flex:none;overflow-x:auto}
 .ob-mail-command-notice{flex:none;padding:5px 12px;border-bottom:1px solid var(--ob-line);background:var(--ob-paper);color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.5}
 .ob-mail-command-notice.is-error{color:var(--dsw-alias-state-error-primary,#b42318)}
@@ -809,12 +1010,12 @@ window.__ModuleLoader__.load({
 @container (max-width:500px){.ob-outlook-mail .ob-grid-mail{grid-template-columns:124px minmax(0,1fr)}.ob-outlook-mail .ob-folder{padding-left:8px}.ob-folder-heading{font-size:12px;padding:0}.ob-outlook-mail .ob-tabs2{padding:0 8px;gap:12px}.ob-outlook-mail .ob-mail{padding-left:12px}.ob-outlook-mail .ob-head{padding:8px}.ob-outlook-mail .ob-head .ob-sub{max-width:200px}}
 
 /* Outlook calendar: left navigator and a full-height six-week month. */
-.ob-calendar-workspace{display:flex;flex:1;flex-direction:column;min-height:0;background:var(--ob-ground);overflow:hidden}
+.ob-calendar-workspace{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden}
 .ob-calendar-toolbar{min-height:43px;gap:5px;flex:none}
 .ob-calendar-view-label{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 9px;border:1px solid var(--ob-line);border-radius:3px;background:var(--ob-ground);font-size:13px}
 .ob-calendar-toolbar .ob-command.active{color:var(--ob-blue)}
 .ob-calendar-hint{font-size:11px;color:var(--dsw-alias-label-tertiary);padding-right:10px;white-space:nowrap}
-.ob-calendar-layout{display:grid;grid-template-columns:232px minmax(0,1fr);flex:1;min-height:0;gap:0;padding-top:7px}
+.ob-calendar-layout{display:grid;grid-template-columns:232px minmax(0,1fr);flex:1;min-height:0}
 .sidebar-hidden .ob-calendar-layout{grid-template-columns:minmax(0,1fr)}
 .ob-calendar-sidebar{overflow-y:auto;min-height:0;padding:8px 14px 16px;background:var(--ob-ground);scrollbar-width:thin}
 .ob-mini-head{display:flex;align-items:center;gap:4px;padding:0 3px 8px;font-size:13px}
@@ -840,7 +1041,8 @@ window.__ModuleLoader__.load({
 .ob-calendar-sidebar-empty{font-size:12px;color:var(--dsw-alias-label-tertiary);padding:8px}
 .ob-calendar-tasks{margin-top:12px;border-top:1px solid var(--ob-line);padding-top:12px;font-size:12px}
 .ob-calendar-tasks summary{cursor:pointer}.ob-calendar-task{display:flex;gap:8px;align-items:flex-start;padding:9px 0}
-.ob-calendar-board{display:flex;flex-direction:column;min-width:0;min-height:0;margin-right:8px;border:1px solid var(--ob-line);border-bottom:0;border-radius:5px 5px 0 0;background:var(--ob-paper);overflow:hidden}
+.ob-calendar-board{display:flex;flex-direction:column;min-width:0;min-height:0;border-inline-start:1px solid var(--ob-line);background:var(--ob-paper);overflow:hidden}
+.sidebar-hidden .ob-calendar-board{border-inline-start:0}
 .ob-calendar-month-head{display:flex;align-items:center;gap:8px;height:48px;flex:none;padding:0 12px}
 .ob-calendar-today{border:1px solid var(--ob-line);border-radius:4px;min-width:90px;gap:14px;min-height:31px;font-weight:600}
 .ob-calendar-nav{width:28px;height:30px;background:transparent;border:0;color:var(--dsw-alias-label-secondary);font-size:21px;cursor:pointer}
@@ -849,11 +1051,11 @@ window.__ModuleLoader__.load({
 .ob-calendar-month-picker input::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
 .ob-calendar-month-picker:focus-within{outline:2px solid var(--ob-blue);outline-offset:3px}
 .ob-calendar-loading{font-size:12px;color:var(--dsw-alias-label-tertiary)}
-.ob-calendar-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex:none;border-top:1px solid var(--ob-line);border-bottom:1px solid var(--ob-line);margin-right:14px}
+.ob-calendar-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex:none;border-top:1px solid var(--ob-line);border-bottom:1px solid var(--ob-line)}
 .ob-calendar-weekdays span{font-size:11px;line-height:27px;border-right:1px solid var(--ob-line);padding:0 8px}
 .ob-calendar-scroll{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
 .ob-calendar-scroll .ob-calendar-weekdays{position:sticky;top:0;z-index:3;background:var(--ob-paper)}
-.ob-calendar-month-grid{flex:1;min-height:648px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(108px,1fr));margin-right:14px}
+.ob-calendar-month-grid{flex:1;min-height:648px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(108px,1fr))}
 .ob-calendar-day{min-width:0;min-height:0;position:relative;display:flex;flex-direction:column;border-right:1px solid var(--ob-line);border-bottom:1px solid var(--ob-line);padding:3px 0 5px;background:transparent;cursor:pointer}
 .ob-calendar-day.outside{background:color-mix(in srgb,currentColor 2%,transparent)}
 .ob-calendar-day:hover{background:color-mix(in srgb,var(--ob-blue) 3%,transparent)}
@@ -871,9 +1073,9 @@ window.__ModuleLoader__.load({
 .ob-event-peek{position:fixed;z-index:1100;width:min(320px,calc(100vw - 16px));background:var(--ob-paper,#fff);color:var(--dsw-alias-label-primary,#242424);border:1px solid var(--ob-line,#ddd);border-radius:8px;box-shadow:0 8px 28px #0000002e;overflow:hidden;font-family:"Segoe UI","Microsoft YaHei",sans-serif}.ob-event-peek-accent{height:4px;background:#13a10e}.ob-event-peek-body{padding:12px 14px 8px;display:flex;flex-direction:column;gap:8px}.ob-event-peek-cat{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-secondary,#555)}.ob-event-peek-dot{width:10px;height:10px;border-radius:2px;flex:none}.ob-event-peek-title{margin:0;font-size:18px;line-height:1.3;font-weight:600}.ob-event-peek-row{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--dsw-alias-label-secondary,#555)}.ob-event-peek-row svg{flex:none;margin-top:1px}.ob-event-peek-actions{display:flex;align-items:center;gap:4px;padding:6px 8px 10px;border-top:1px solid var(--ob-line,#eee)}.ob-event-peek-actions .ob-command{min-height:30px;padding:0 10px;font-size:12.5px}.ob-event-peek-expand{margin-left:auto}.ob-event-peek-extra{padding:0 14px 12px;font-size:12px;color:var(--dsw-alias-label-tertiary,#666);white-space:pre-wrap}.ob-day-peek{position:fixed;z-index:1100;width:min(300px,calc(100vw - 16px));max-height:min(360px,70vh);overflow:auto;background:var(--ob-paper,#fff);border:1px solid var(--ob-line,#ddd);border-radius:8px;box-shadow:0 8px 28px #0000002e;padding:8px}.ob-day-peek-head{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px;font-weight:600;font-size:13px}.ob-day-peek-item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;border:0;border-left:3px solid;background:transparent;padding:8px 10px;margin:2px 0;border-radius:4px;cursor:pointer;font:inherit}.ob-day-peek-item:hover{background:var(--ob-ground,#f5f5f5)}.ob-day-peek-item strong{font-size:13px}.ob-day-peek-item span{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#666)}
 .ob-outlook-calendar button:focus-visible,.ob-outlook-calendar a:focus-visible,.ob-outlook-calendar input:focus-visible{outline:2px solid var(--ob-blue);outline-offset:-2px}
 .ob-outlook-calendar .ob-btn.primary{background:var(--ob-blue)}
-.ob-outlook-calendar .ob-body>.ob-banner,.ob-outlook-calendar .ob-body>.ob-error{margin:5px 10px}
+.ob-outlook-calendar .ob-body-feedback{padding:5px 10px}
 @container (max-width:1000px){.ob-calendar-layout{grid-template-columns:200px minmax(0,1fr)}.ob-calendar-sidebar{padding:8px}.ob-calendar-hint{display:none}.ob-calendar-month-picker{font-size:17px}.ob-calendar-choice{padding-left:26px}}
-@container (max-width:700px){.ob-calendar-layout{grid-template-columns:166px minmax(0,1fr)}.ob-calendar-mini-head{font-size:12px}.ob-calendar-board{overflow-x:auto}.ob-calendar-month-head,.ob-calendar-weekdays,.ob-calendar-month-grid{min-width:570px}.ob-calendar-sidebar{padding:6px}.ob-mini-day{height:25px}.ob-calendar-choice{padding-left:15px;font-size:12px}.ob-calendar-month-head{gap:4px}.ob-calendar-toolbar{gap:0}}
+@container (max-width:700px){.ob-calendar-layout{grid-template-columns:166px minmax(0,1fr)}.ob-calendar-mini-head{font-size:12px}.ob-calendar-weekdays,.ob-calendar-month-grid{min-width:570px}.ob-calendar-sidebar{padding:6px}.ob-mini-day{height:25px}.ob-calendar-choice{padding-left:15px;font-size:12px}.ob-calendar-month-head{gap:4px;overflow-x:auto}.ob-calendar-toolbar{gap:0}}
 .ob-context-menu{position:fixed;z-index:1200;min-width:214px;max-width:calc(100vw - 12px);max-height:calc(100vh - 12px);overflow:auto;padding:5px;background:var(--dsw-alias-bg-overlay,#fff);color:var(--dsw-alias-label-primary,#242424);border:1px solid var(--dsw-alias-border-l1,#ddd);border-radius:7px;box-shadow:0 8px 28px #0003;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
 .ob-context-menu button{display:flex;align-items:center;gap:10px;min-height:34px;width:100%;padding:6px 12px;border:0;border-radius:3px;background:transparent;color:inherit;text-align:left;font:inherit;font-size:13px;cursor:pointer}.ob-context-menu button:hover,.ob-context-menu button:focus-visible{background:var(--dsw-alias-bg-layer-2,#f1f1f1);outline:0}.ob-context-menu button:disabled{opacity:.4;cursor:default}.ob-context-menu button.danger{color:#bd2727}.ob-context-separator{height:1px;background:var(--dsw-alias-border-l1,#ddd);margin:4px 7px}
 .ob-context-toast{position:fixed;z-index:1300;bottom:22px;left:50%;transform:translateX(-50%);padding:12px 18px;background:var(--dsw-alias-bg-overlay,#fff);border:1px solid var(--dsw-alias-border-l1,#ddd);box-shadow:0 4px 20px #0003;border-radius:6px;max-width:80vw}.ob-context-toast button{border:0;background:transparent;color:inherit;margin-left:14px;cursor:pointer}
@@ -904,7 +1106,7 @@ window.__ModuleLoader__.load({
 .ob-inline-intent{display:flex;align-items:center;gap:10px;margin:10px 0;font-size:12px;color:var(--dsw-alias-label-secondary)}
 .ob-inline-intent input{flex:1;min-width:0;height:34px;padding:6px 10px;border:1px solid var(--ob-line);border-radius:4px;background:var(--ob-paper);color:inherit;font:inherit}
 .ob-inline-editor{display:block;width:100%;box-sizing:border-box;min-height:220px;resize:vertical;padding:14px;border:1px solid var(--ob-line);border-radius:5px;background:var(--ob-paper);color:inherit;font:inherit;font-size:14px;line-height:1.75;outline:none}
-.ob-ai-wrap{flex:none;display:flex;flex-direction:column;padding:8px 14px 10px;background:#f3f3f3;border-bottom:1px solid var(--ob-line,#dedede);box-sizing:border-box}
+.ob-ai-wrap{flex:none;display:flex;flex-direction:column;padding:8px 14px;background:#f3f3f3;border-bottom:1px solid var(--ob-line,#dedede);box-sizing:border-box}
 .ob-ai-bar{display:flex;align-items:center;gap:8px;margin:0;padding:4px 8px 4px 12px;min-height:38px;border-radius:20px;background:#fff;border:1px solid #e8e8e8;box-shadow:0 2px 8px rgba(0,0,0,.12);box-sizing:border-box}
 .ob-ai-bar-mark{flex:none;font-size:11px;font-weight:700;letter-spacing:.3px;color:#0f6cbd;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,#0f6cbd 10%,transparent)}
 .ob-ai-bar-input{flex:1;min-width:0;height:30px;border:0;outline:none;background:transparent;color:inherit;font:inherit;font-size:13px}
@@ -915,13 +1117,39 @@ window.__ModuleLoader__.load({
 .ob-ai-bar-msg{flex:none;max-width:42%;font-size:11.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#168042}
 .ob-ai-bar-msg.err{color:#b42318}
 .ob-ai-bar-msg.busy{color:#666}
-:is(.ob-outlook-mail,.ob-outlook-calendar) .ob-ai-wrap{padding:8px 12px 10px;background:#f3f3f3;border-bottom-color:var(--ob-line,#dedede)}
+:is(.ob-outlook-mail,.ob-outlook-calendar) .ob-ai-wrap{padding-inline:12px;background:#f3f3f3;border-bottom-color:var(--ob-line,#dedede)}
 :is(.ob-outlook-mail,.ob-outlook-calendar) .ob-ai-bar{margin:0;background:#fff;border-color:#e8e8e8;box-shadow:0 2px 8px rgba(0,0,0,.12)}
 
 .ob-inline-editor:focus,.ob-inline-intent input:focus{border-color:var(--ob-blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--ob-blue) 15%,transparent)}
 .ob-inline-reply-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .ob-ai-suggestion{margin-top:12px;padding:12px;border:1px solid var(--ob-line);border-radius:5px;background:var(--ob-ground);font-size:12px}.ob-ai-suggestion .ob-ai-output{margin:8px 0}
 .ob-reading-pane .ob-reading-card{overflow:visible}
+
+/* Paint each region once so a solid workspace cannot hide local transparency. */
+.ob-root{
+  --ob-paper-base:var(--dsw-alias-bg-layer-1,#fff);
+  --ob-ground-base:var(--dsw-alias-bg-layer-2,#f5f5f5);
+  --ob-paper:color-mix(in srgb,var(--ob-paper-base) var(--ob-panel-opacity,100%),transparent);
+  --ob-ground:color-mix(in srgb,var(--ob-ground-base) var(--ob-panel-opacity,100%),transparent)
+}
+.ob-root :is(.ob-head,.ob-ai-wrap,.ob-commandbar,.ob-mail-folders,.ob-mail-list,.ob-reading-pane,.ob-calendar-sidebar,.ob-calendar-board,.ob-plan-header,.ob-plan-panel){
+  --ob-region-opacity:calc(var(--ob-panel-opacity,100%) * var(--ob-region-strength,1));
+  --ob-paper:color-mix(in srgb,var(--ob-paper-base) var(--ob-region-opacity),transparent);
+  --ob-ground:color-mix(in srgb,var(--ob-ground-base) var(--ob-region-opacity),transparent);
+  backdrop-filter:var(--ob-region-filter,var(--ob-panel-filter,none))
+}
+.ob-root :is(.ob-head,.ob-ai-wrap,.ob-mail-folders,.ob-reading-pane){background:var(--ob-ground)}
+.ob-body-feedback{flex:none;display:grid;gap:8px;padding:8px 12px;background:var(--ob-ground);backdrop-filter:var(--ob-panel-filter,none)}
+.ob-body-feedback>.ob-banner{background:transparent;border:1px solid var(--ob-line,#dedede)}
+.ob-body-feedback:has(+.ob-todo-page){padding:4px 14px}
+.ob-body-feedback:has(+.ob-todo-page)>.ob-banner{padding-block:4px}
+@container(max-width:570px){.ob-body-feedback:has(+.ob-todo-page){padding-inline:8px}}
+.ob-root .ob-mail-command-notice{backdrop-filter:var(--ob-panel-filter,none)}
+.ob-root .ob-ai-bar{background:var(--ob-paper)}
+.ob-root .ob-mail-list{background:var(--ob-paper)}
+.ob-root .ob-mail-list :is(.ob-tabs2,.ob-mail:not(:hover):not(.sel)){background:transparent}
+.ob-root:not(.ob-outlook-mail,.ob-outlook-calendar) .ob-body{background:var(--ob-paper);backdrop-filter:var(--ob-panel-filter,none)}
+.ob-appearance-mask{position:absolute;box-sizing:border-box;padding:12px;background:#0002;backdrop-filter:none}
 @container(max-width:800px){.ob-inline-intent{align-items:flex-start;flex-direction:column}.ob-inline-intent input{width:100%;box-sizing:border-box}.ob-inline-editor{min-height:190px}}
 
 `
@@ -953,10 +1181,14 @@ window.__ModuleLoader__.load({
       const paths = {
         save: 'M4 3h14l3 3v15H3V3h1ZM7 3v6h10V3M7 21v-8h10v8',
         clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 7v5h4',
+        check: 'm5 12 4 4L19 6',
         people: 'M9 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM3 21v-5a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v5M17 4a3 3 0 0 1 0 6M18 13a4 4 0 0 1 3 4v4',
         location: 'M12 22s8-8 8-13a8 8 0 0 0-16 0c0 5 8 13 8 13ZM12 6a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
         video: 'M3 5h12v14H3V5Zm12 5 6-4v12l-6-4',
         notes: 'M4 3h16v18H4V3ZM8 7h8M8 11h8M8 15h5',
+        panel: 'M4 4h16v16H4z',
+        header: 'M4 4h16v16H4zM4 9h16',
+        columns: 'M4 4h16v16H4zM10 4v16',
         calendar: 'M3 5h18v16H3V5ZM3 10h18M7 2v6M17 2v6M7 14h3M14 14h3M7 18h3',
         refresh: 'M20 7A9 9 0 0 0 4 6L2 9m0-6v6h6M4 17a9 9 0 0 0 16 1l2-3m0 6v-6h-6',
         compose: 'M13 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-8M16 3l5 5M10 14l2-5 7-7 5 5-7 7-5 2',
@@ -1019,6 +1251,18 @@ window.__ModuleLoader__.load({
       const raw = String(text || '').trim()
       const parts = shanghaiTodayParts()
       const today = `${parts.year}-${parts.month}-${parts.day}`
+      const taskPrefix = /^(?:(?:请\s*)?(?:帮我\s*)?(?:添加|新建|创建|记下)\s*(?:一个|一项|一条)?\s*(?:计划|待办|任务)(?!清单|列表)|(?:计划|待办|任务)(?=\s*[:：]))/u.exec(raw)
+      if (taskPrefix) {
+        const input = raw.slice(taskPrefix[0].length).replace(/^[\s:：,，]+/u, '')
+        if (!input) return { intent: 'unknown', reply: '请输入要添加的计划标题', fallback: true }
+        const task = parsePlanTitle(input, Number(parts.year))
+        const relative = /^(今天|今日|明天|后天)[\s:：,，]*(.+)$/u.exec(task.title)
+        if (!task.dueDate && relative) {
+          task.dueDate = addDaysYmd(today, { 今天: 0, 今日: 0, 明天: 1, 后天: 2 }[relative[1]])
+          task.title = relative[2].trim()
+        }
+        return { intent: 'task', task, fallback: true }
+      }
       const lower = raw.toLowerCase()
       const emailMatch = raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)
       const wantsMail = /邮件|写信|发给|写给|发送给|发信|compose|email|mail/i.test(raw) || Boolean(emailMatch && /写|发|给/.test(raw))
@@ -1108,7 +1352,7 @@ window.__ModuleLoader__.load({
         intent: 'unknown',
         calendar: null,
         mail: null,
-        reply: 'AI 暂不可用，请尝试「明天下午3点开会30分钟」或「给 xxx@yy.com 写一封…邮件」',
+        reply: 'AI 暂不可用，请尝试「添加计划：明天交周报」、「明天下午3点开会」或「给 xxx@yy.com 写邮件」',
         fallback: true,
       }
     }
@@ -1613,7 +1857,8 @@ window.__ModuleLoader__.load({
 
     function MailWorkspace(props) {
       const { t, selected, busy, folders, folder, onFolder, account, onCompose, onDelete,
-        onArchive, onToggleRead, onMarkFolderRead, readAllFeedback, connected, surface, readingSurface, unread } = props
+        onArchive, onToggleRead, onMarkFolderRead, readAllFeedback, connected, unread,
+        toolbarSurface, folderSurface, readingSurface } = props
       const [favoritesOpen, setFavoritesOpen] = React.useState(true)
       const [accountOpen, setAccountOpen] = React.useState(true)
       const names = { inbox: '收件箱', drafts: '草稿', sentitems: '已发送邮件', deleteditems: '已删除邮件', archive: '存档', junkemail: '垃圾邮件' }
@@ -1641,8 +1886,9 @@ window.__ModuleLoader__.load({
       const command = (name, label, action, disabled = !selected || busy) => h('button', {
         type: 'button', className: 'ob-command', disabled, onClick: action,
       }, h(MailIcon, { name }), h('span', null, label))
-      return h('div', { className: `ob-mail-workspace${selected ? ' has-selection' : ''}`, style: surface },
-        h('div', { className: 'ob-commandbar', role: 'toolbar', 'aria-label': '邮件操作' },
+      return h('div', { className: `ob-mail-workspace${selected ? ' has-selection' : ''}` },
+        h('div', { className: 'ob-commandbar',
+          style: toolbarSurface, role: 'toolbar', 'aria-label': '邮件操作' },
           h('button', { type: 'button', className: 'ob-command ob-new-mail', disabled: busy, onClick: onCompose }, h(MailIcon, { name: 'compose' }), '新邮件'),
           h('span', { className: 'ob-command-divider' }),
           command('deleteditems', t('mail.delete'), () => onDelete(selected)),
@@ -1655,7 +1901,8 @@ window.__ModuleLoader__.load({
           role: readAllFeedback.error ? 'alert' : 'status',
         }, readAllFeedback.message) : null,
         h('div', { className: 'ob-grid ob-grid-mail' },
-          h('aside', { className: 'ob-mail-folders', 'aria-label': '邮件文件夹' },
+          h('aside', { className: 'ob-mail-folders',
+            style: folderSurface, 'aria-label': '邮件文件夹' },
             h('button', { type: 'button', className: 'ob-folder-heading', 'aria-expanded': favoritesOpen, onClick: () => setFavoritesOpen(!favoritesOpen) },
               h('span', { className: favoritesOpen ? '' : 'ob-rotate' }, h(MailIcon, { name: 'chevron', size: 14 })), '收藏夹'),
             favoritesOpen ? ['inbox', 'sentitems', 'drafts'].map((key) => allFolders.find((f) => f.key === key)).filter(Boolean).map(folderButton) : null,
@@ -1663,9 +1910,10 @@ window.__ModuleLoader__.load({
               h('span', { className: accountOpen ? '' : 'ob-rotate' }, h(MailIcon, { name: 'chevron', size: 14 })), h('span', { className: 'ob-folder-name' }, account || 'Outlook')),
             accountOpen ? ['inbox', 'junkemail', 'drafts', 'sentitems', 'deleteditems', 'archive'].map((key) => allFolders.find((f) => f.key === key)).filter(Boolean).map(folderButton) : null),
           h(MailBlock, { ...props, onContextRow }),
-          h('section', { className: 'ob-reading-pane', 'aria-label': selected ? '邮件阅读区' : '邮件欢迎页',
+          h('section', { className: 'ob-reading-pane',
+            style: readingSurface, 'aria-label': selected ? '邮件阅读区' : '邮件欢迎页',
             onContextMenu: (event) => { if (selected && !event.target.closest('input,textarea,[contenteditable]') && !window.getSelection()?.toString()) onContextRow(event, selected) } },
-            selected ? h(MailReadingPane, { key: selected.id, selected, t, surface: readingSurface,
+            selected ? h(MailReadingPane, { key: selected.id, selected, t,
               replyRequest: props.replyRequest, onSend: props.onSendReply, busy, onClose: () => props.onSelect(null) }) : h(MailWelcome, null))))
     }
 
@@ -1940,7 +2188,7 @@ window.__ModuleLoader__.load({
           h('p', { className: 'ob-welcome-copy' }, '从左侧选一封邮件，开始今天的工作。')))
     }
 
-    function MailReadingPane({ selected, t, surface, replyRequest, onSend, busy, onClose }) {
+    function MailReadingPane({ selected, t, replyRequest, onSend, busy, onClose }) {
       const [detail, setDetail] = React.useState(null)
       const [detailError, setDetailError] = React.useState('')
       const [detailLoading, setDetailLoading] = React.useState(true)
@@ -2023,7 +2271,7 @@ window.__ModuleLoader__.load({
       }
       const mail = detail || selected
       const aiDisabled = Boolean(aiBusy) || !aiStatus?.available || busy
-      return h('article', { className: 'ob-reading-card', style: surface },
+      return h('article', { className: 'ob-reading-card' },
         h('h2', { className: 'ob-reading-title' }, selected.subject),
         h('div', { className: 'ob-reading-sender' },
           h('span', { className: 'ob-mail-avatar', style: { background: avatarColor(selected.from), color: '#48423d' } }, initial(selected.from)),
@@ -2086,7 +2334,8 @@ window.__ModuleLoader__.load({
     }
 
     function MonthCalendar(props) {
-      const { t, tasks = [], unsupported, onToggle, busy, surface, pendingCreate, onPendingCreateConsumed, calendarNonce } = props
+      const { t, tasks = [], onToggle, busy, surface, listSurface,
+        toolbarSurface, pendingCreate, onPendingCreateConsumed, calendarNonce } = props
       const [cursor, setCursor] = React.useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
       const [data, setData] = React.useState(null)
       const [loading, setLoading] = React.useState(false)
@@ -2451,7 +2700,8 @@ window.__ModuleLoader__.load({
 
       return h(
         'div', { className: `ob-calendar-workspace${showSidebar ? '' : ' sidebar-hidden'}` },
-        h('div', { className: 'ob-commandbar ob-calendar-toolbar', role: 'toolbar', 'aria-label': '日历操作' },
+        h('div', { className: 'ob-commandbar ob-calendar-toolbar',
+          style: toolbarSurface, role: 'toolbar', 'aria-label': '日历操作' },
           h('button', { type: 'button', className: 'ob-command ob-new-mail', disabled: busy || saving, onClick: () => openCreate(selectedDay) }, h(MailIcon, { name: 'calendar' }), '新事件'),
           h('span', { className: 'ob-command-divider' }),
           h('span', { className: 'ob-calendar-view-label' }, h(MailIcon, { name: 'calendar', size: 17 }), '月'),
@@ -2461,7 +2711,8 @@ window.__ModuleLoader__.load({
           h('span', { className: 'ob-spacer' }),
           h('span', { className: 'ob-calendar-hint' }, '双击日期新建日程')),
         h('div', { className: 'ob-calendar-layout' },
-          showSidebar ? h('aside', { className: 'ob-calendar-sidebar', 'aria-label': '日历导航' },
+          showSidebar ? h('aside', { className: 'ob-calendar-sidebar',
+            style: listSurface, 'aria-label': '日历导航' },
             h('div', { className: 'ob-mini-head' }, h('strong', null, monthLabel),
               h('button', { type: 'button', 'aria-label': '上个月', onClick: () => moveMonth(-1) }, '‹'),
               h('button', { type: 'button', 'aria-label': '下个月', onClick: () => moveMonth(1) }, '›')),
@@ -2650,108 +2901,89 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function CalendarPage(props) {
-      const { t, events, tasks, unsupported, onToggle, busy, surface, pendingCreate, onPendingCreateConsumed, calendarNonce } = props
-      return h(MonthCalendar, { t, tasks, unsupported, onToggle, busy, surface, pendingCreate, onPendingCreateConsumed, calendarNonce })
+    const appearanceGroups = {
+      mail: ['mailPanel', 'mailHeader', 'mailAiBar', 'mailToolbar', 'mailFolders', 'mail', 'mailReading'],
+      calendar: ['calendarPanel', 'calendarHeader', 'calendarAiBar', 'calendarToolbar', 'calendarList', 'calendar'],
+      todo: ['todoPanel', 'todoHeader', 'todoAiBar', 'todoCreate', 'todoCategories', 'todoCompleted', 'todoAll', 'todoToday', 'todoTomorrow'],
+    }
+
+    const appearanceSharedLabels = {
+      mailPanel: 'panel', calendarPanel: 'panel', todoPanel: 'panel',
+      mailHeader: 'header', calendarHeader: 'header', todoHeader: 'header',
+      mailAiBar: 'aiBar', calendarAiBar: 'aiBar', todoAiBar: 'aiBar',
+      mailToolbar: 'toolbar', calendarToolbar: 'toolbar',
+    }
+
+    const appearanceIcons = {
+      panel: 'panel', header: 'header', aiBar: 'compose', toolbar: 'filter', mailFolders: 'inbox', mail: 'mail', mailReading: 'notes',
+      calendarList: 'columns', calendar: 'calendar',
+      todoCreate: 'compose', todoCategories: 'filter', todoCompleted: 'check', todoAll: 'columns', todoToday: 'calendar', todoTomorrow: 'calendar',
+    }
+
+    function AppearanceCard({ t, region, values, onChange, disabled }) {
+      const opacity = values?.opacity ?? 100
+      const blur = values?.blur ?? 0
+      const labelKey = appearanceSharedLabels[region] ?? region
+      const label = t(`ui.${labelKey}`)
+      const slider = (field, value, max, unit) => h('label', { className: 'ob-slider' },
+        h('span', null, t(`ui.${field}`)),
+        h('input', {
+          type: 'range', min: 0, max, step: 1, value, disabled,
+          'aria-valuetext': `${value}${unit}`,
+          onInput: (event) => onChange(region, field, event.currentTarget.valueAsNumber),
+        }),
+        h('b', { 'aria-hidden': true }, `${value}${unit}`))
+      return h('section', { className: 'ob-surface-card', 'aria-label': label },
+        h('div', { className: 'ob-surface-title' },
+          h('span', { className: 'ob-surface-icon' }, h(MailIcon, { name: appearanceIcons[labelKey], size: 18 })),
+          h('h3', null, label),
+          h('span', { className: 'ob-surface-badge', 'aria-hidden': true }, `${opacity}%`)),
+        slider('opacity', opacity, 100, '%'),
+        slider('blur', blur, 40, 'px'))
     }
 
     function AppearancePage(props) {
-      const { t, appearance, setAppearance, onSave, onReset, onClose, busy } = props
-      const regions = [
-        ['panel', t('ui.panel')],
-        ['mail', t('ui.mail')],
-        ['calendar', t('ui.calendar')],
-        ['todo', t('ui.todo')],
-        ['reply', t('ui.reply')],
-      ]
-      const valueOf = (key, field, fallback) => {
-        const row = appearance?.[key] ?? {}
-        const raw = row[field]
-        return Number.isFinite(Number(raw)) ? Number(raw) : fallback
-      }
+      const { t, view, onView, appearance, setAppearance, onSave, onReset, onClose, busy } = props
+      const [feedback, setFeedback] = React.useState(null)
       const update = (key, field, value) => {
-        const next = { ...(appearance ?? {}) }
-        next[key] = { ...(next[key] ?? {}), [field]: Number(value) }
-        setAppearance(next)
+        setFeedback(null)
+        setAppearance((current) => ({ ...current, [key]: { ...current?.[key], [field]: value } }))
       }
-      return h(
-        'div',
-        {
-          className: 'ob-modal-mask',
-          onClick: (event) => {
-            if (event.target === event.currentTarget) onClose()
-          },
+      const save = async () => {
+        setFeedback(null)
+        try {
+          await onSave()
+          setFeedback({ text: t('ui.saved') })
+        } catch (failure) {
+          setFeedback({ text: failure.message, error: true })
+        }
+      }
+      return h('div', {
+        className: 'ob-modal-mask ob-appearance-mask',
+        onClick: (event) => { if (event.target === event.currentTarget) onClose() },
+      },
+        h('div', {
+          className: 'ob-modal ob-appearance-dialog', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'ob-ui-title',
+          onKeyDown: (event) => { if (event.key === 'Escape') onClose() },
         },
-        h(
-          'div',
-          { className: 'ob-modal' },
-          h(
-            'div',
-            { className: 'ob-modal-head' },
-            h('span', null, t('ui.title')),
-            h('button', { type: 'button', className: 'ob-btn', onClick: onClose }, t('action.close')),
-          ),
-          h(
-            'div',
-            { className: 'ob-ui-page' },
-            h('div', { className: 'ob-ui-head' }, t('ui.hint')),
-        h(
-          'div',
-          { className: 'ob-surface-grid' },
-          regions.map(([key, label]) =>
-            h(
-              'div',
-              { className: 'ob-surface-card', key },
-              h(
-                'div',
-                { className: 'ob-surface-title' },
-                label,
-                h('span', { className: 'ob-surface-badge' }, `${valueOf(key, 'opacity', 100)}%`),
-              ),
-              h(
-                'label',
-                { className: 'ob-slider' },
-                h('span', null, t('ui.opacity')),
-                h('input', {
-                  type: 'range',
-                  min: 0,
-                  max: 100,
-                  step: 1,
-                  value: valueOf(key, 'opacity', 100),
-                  onChange: (event) => update(key, 'opacity', event.target.value),
-                }),
-                h('b', null, `${valueOf(key, 'opacity', 100)}%`),
-              ),
-              h(
-                'label',
-                { className: 'ob-slider' },
-                h('span', null, t('ui.blur')),
-                h('input', {
-                  type: 'range',
-                  min: 0,
-                  max: 40,
-                  step: 1,
-                  value: valueOf(key, 'blur', 0),
-                  onChange: (event) => update(key, 'blur', event.target.value),
-                }),
-                h('b', null, `${valueOf(key, 'blur', 0)}px`),
-              ),
-            ),
-          ),
-        ),
-            h(
-              'div',
-              { className: 'ob-ui-foot' },
-              h(
-                'button',
-                { type: 'button', className: 'ob-btn primary', disabled: busy, onClick: onSave },
-                t('ui.save'),
-              ),
-              h('button', { type: 'button', className: 'ob-btn', disabled: busy, onClick: onReset }, t('ui.reset')),
-            ),
-          ),
-        ),
-      )
+          h('header', { className: 'ob-modal-head' },
+            h('span', { id: 'ob-ui-title' }, t('ui.title')),
+            h('button', { type: 'button', className: 'ob-btn', onClick: onClose }, t('action.close'))),
+          h('div', { className: 'ob-ui-page' },
+            h('div', { className: 'ob-ui-head' },
+              h('div', { className: 'ob-ui-kicker' }, 'SURFACES'),
+              h('h2', null, t('ui.surfaces')),
+              h('p', null, t('ui.hint'))),
+            h('div', { className: 'ob-appearance-tabs' }, Object.keys(appearanceGroups).map((key) =>
+              h('button', { key, type: 'button', className: 'ob-btn', 'aria-pressed': view === key,
+                onClick: () => onView(key) }, t(`tab.${key}`)))),
+            h('div', { className: 'ob-surface-grid' }, appearanceGroups[view].map((key) =>
+              h(AppearanceCard, { key, t, region: key, values: appearance?.[key], onChange: update, disabled: busy })))),
+          h('footer', { className: 'ob-ui-foot' },
+            feedback ? h('span', { className: 'ob-ui-feedback', role: feedback.error ? 'alert' : 'status' }, feedback.text) : null,
+            h('button', { type: 'button', className: 'ob-btn', disabled: busy,
+              onClick: () => { setFeedback(null); onReset() } }, t('ui.reset')),
+            h('button', { type: 'button', className: 'ob-btn primary', disabled: busy, onClick: save }, t('ui.save')))))
     }
 
     function CalendarBlock(props) {
@@ -2816,49 +3048,280 @@ window.__ModuleLoader__.load({
 
     /* --------------------------------------------------------- todo block */
 
-    function TodoBlock(props) {
-      const { tasks, t, onToggle, busy, unsupported, surface } = props
-      return h(
-        'section',
-        { className: 'ob-card grow', style: surface },
-        h(
-          'div',
-          { className: 'ob-card-head' },
-          h('span', { className: 'ob-card-title' }, t('todo.title')),
-          h('span', { className: 'ob-count' }, tasks.length > 0 ? `${tasks.length}` : ''),
-        ),
-        h(
-          'div',
-          { className: 'ob-list' },
-          tasks.length === 0
-            ? h('div', { className: 'ob-empty' }, unsupported ? t('todo.unsupported') : t('todo.empty'))
-            : tasks.map((task) =>
-                h(
-                  'div',
-                  { className: 'ob-todo', key: `${task.listId}:${task.id}` },
-                  h('button', {
-                    type: 'button',
-                    className: `ob-check${task.completed ? ' done' : ''}`,
-                    'aria-label': task.title,
-                    disabled: busy,
-                    onClick: () => onToggle(task),
-                  }),
-                  h(
-                    'span',
-                    { className: 'ob-todo-main' },
-                    h('div', { className: `ob-todo-title${task.completed ? ' done' : ''}` }, task.title),
-                    h(
-                      'div',
-                      { className: 'ob-todo-meta' },
-                      [task.due ? t('todo.due', { time: fmtDue(parseDate(task.due), t) }) : '', task.listName]
-                        .filter(Boolean)
-                        .join(' 路 '),
-                    ),
-                  ),
-                ),
-              ),
-        ),
-      )
+    function parsePlanTitle(input, currentYear) {
+      const title = input.trim()
+      const suffix = /\/(?:(\d{4})\.)?(\d{1,2})\.(\d{1,2})$/.exec(title)
+      if (!suffix) return { title, dueDate: '' }
+      const name = title.slice(0, suffix.index).trimEnd()
+      const year = suffix[1] ?? String(currentYear).padStart(4, '0')
+      const dueDate = `${year}-${pad(suffix[2])}-${pad(suffix[3])}`
+      const date = new Date(`${dueDate}T00:00:00Z`)
+      if (!name || year === '0000' || !Number.isFinite(+date) || date.toISOString().slice(0, 10) !== dueDate) {
+        return { title, dueDate: '' }
+      }
+      return { title: name, dueDate }
+    }
+
+    function planTimestamp(value) {
+      if (!value) return NaN
+      // Graph's default completion time is UTC and may omit the offset.
+      return Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`)
+    }
+
+    function groupPlanTasks(tasks, date, { field, ascending }) {
+      const today = dayKey(date)
+      const nextDay = new Date(date)
+      nextDay.setDate(nextDay.getDate() + 1)
+      const tomorrow = dayKey(nextDay)
+      const groups = { all: [], overdue: [], today: [], tomorrow: [], completed: [], categories: new Map() }
+      for (const task of tasks) {
+        if (task.completed) { groups.completed.push(task); continue }
+        groups.all.push(task)
+        const due = task.due?.slice(0, 10)
+        if (due === today) groups.today.push(task)
+        if (due === tomorrow) groups.tomorrow.push(task)
+        if (due && due < today) groups.overdue.push(task)
+        for (const name of new Set(task.categories ?? [])) {
+          if (!groups.categories.has(name)) groups.categories.set(name, [])
+          groups.categories.get(name).push(task)
+        }
+      }
+      groups.completed.sort((a, b) => {
+        const first = planTimestamp(a[field])
+        const second = planTimestamp(b[field])
+        if (Number.isNaN(first)) return Number.isNaN(second) ? 0 : 1
+        if (Number.isNaN(second)) return -1
+        return ascending ? first - second : second - first
+      })
+      return groups
+    }
+
+    function PlanCompletionTime({ value }) {
+      const timestamp = planTimestamp(value)
+      if (!Number.isFinite(timestamp)) return null
+      const date = new Date(timestamp)
+      return h('time', { className: 'ob-todo-completion-time', dateTime: date.toISOString() },
+        h('span', null, `${fmtTime(date)}:${pad(date.getSeconds())}`),
+        h('span', null, `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`))
+    }
+
+    function TodoRows({ tasks, t, onToggle, busy, canDrag, dragged, sourceKey, sourceCategory, onStartDrag, onEndDrag, onContextTask }) {
+      return tasks.map((task) => h('div', {
+        className: `ob-todo${task.completed ? ' ob-todo-completed' : ''}${dragged?.id === task.id && dragged.listId === task.listId ? ' ob-plan-dragging' : ''}`,
+        key: `${task.listId}:${task.id}`,
+        draggable: canDrag && !task.completed,
+        onDragStart: (event) => task.completed ? event.preventDefault() : onStartDrag(event, task, sourceKey, sourceCategory),
+        onDragEnd: onEndDrag,
+        onContextMenu: (event) => onContextTask(event, task),
+      },
+        h('input', {
+          type: 'checkbox', checked: Boolean(task.completed),
+          'aria-label': t(task.completed ? 'todo.restore' : 'todo.complete', { title: task.title }),
+          title: t(task.completed ? 'todo.restore' : 'todo.complete', { title: task.title }),
+          disabled: busy, onChange: () => onToggle(task),
+        }),
+        h('div', { className: 'ob-todo-main' },
+          h('div', { className: 'ob-todo-title' }, task.title),
+          h('div', { className: 'ob-todo-meta' },
+            [task.due ? t('todo.due', { time: task.due.slice(0, 10) }) : '', task.listName].filter(Boolean).join(' · '))),
+        task.completed ? h(PlanCompletionTime, { value: task.completedAt }) : null,
+        canDrag && !task.completed ? h('span', { className: 'ob-plan-grip', 'aria-hidden': true }, '⠿') : null))
+    }
+
+    function TodoPanel({ label, count, empty, overdue, target, headerControl, surface, children }) {
+      return h('section', {
+        className: `ob-card ob-plan-panel${overdue ? ' ob-plan-overdue' : ''}${target?.preview ? ' ob-plan-drop-hot' : ''}`,
+        'aria-label': label, style: surface, ...target?.events,
+      },
+        h('div', { className: 'ob-card-head' }, h('h3', null, label), headerControl, h('span', { className: 'ob-count' }, count)),
+        target?.preview,
+        h('div', { className: 'ob-list' }, children ?? (target?.preview ? null : h('div', { className: 'ob-empty' }, empty))))
+    }
+
+    function TodoPage({ t, lists, tasks, error, stale, connected, busy, onCreate, onToggle, onMove, onDelete, onRefresh, completedSort, onCompletedSort, surfaceOf }) {
+      const [listId, setListId] = React.useState('')
+      const [title, setTitle] = React.useState('')
+      const [dueDate, setDueDate] = React.useState('')
+      const [categoryFilter, setCategoryFilter] = React.useState('overdue')
+      const [dragged, setDragged] = React.useState(null)
+      const [hover, setHover] = React.useState('')
+      const dragRef = React.useRef(null)
+      const selectedList = listId ? lists.find((list) => list.id === listId) : lists[0]
+      const canAdd = connected && Boolean(selectedList) && !busy
+      const canDrag = connected && !busy
+      const now = new Date()
+      const today = dayKey(now)
+      const tomorrow = addDaysYmd(today, 1)
+      const draftPlan = parsePlanTitle(title, now.getFullYear())
+      const selectedDueDate = draftPlan.dueDate || dueDate
+      const chooseDueDate = (date) => {
+        if (draftPlan.dueDate) setTitle(draftPlan.title)
+        setDueDate(date)
+      }
+      const groups = groupPlanTasks(tasks, now, completedSort)
+      const categoryNames = [...groups.categories.keys()].filter(Boolean).sort((a, b) => a.localeCompare(b))
+      const categoryName = categoryNames.find((name) => categoryFilter === `category:${name}`)
+      const categoryList = lists.find((list) => categoryFilter === `list:${list.id}`)
+      const categoryKey = categoryList ? `list:${categoryList.id}` : categoryName ? `category:${categoryName}` : 'overdue'
+      const showOverdue = categoryKey === 'overdue'
+      const categoryTasks = categoryList
+        ? groups.all.filter((task) => task.listId === categoryList.id)
+        : showOverdue ? groups.overdue : groups.categories.get(categoryName)
+      const onContextTask = (event, task) => {
+        const currentDue = task.due?.slice(0, 10) ?? null
+        const setDue = (label, dueDate) => ({
+          label, icon: 'calendar', disabled: !canDrag || currentDue === dueDate,
+          run: () => onMove(task, { dueDate }),
+        })
+        openContextMenu(event, [
+          {
+            label: t(task.completed ? 'todo.menuRestore' : 'todo.menuComplete'),
+            icon: task.completed ? 'reply' : 'check', disabled: !canDrag,
+            run: () => onToggle(task),
+          },
+          ...(!task.completed ? [
+            { separator: true },
+            setDue(t('todo.menuDue', { day: t('calendar.today') }), today),
+            setDue(t('todo.menuDue', { day: t('calendar.tomorrow') }), tomorrow),
+            setDue(t('todo.menuClearDue'), null),
+          ] : []),
+          { separator: true },
+          { label: t('todo.menuCopyTitle'), icon: 'notes', run: () => copyOutlookText(task.title) },
+          ...(lists.some((list) => list.id === task.listId && list.canDeleteTasks) ? [
+            { separator: true },
+            { label: t('todo.menuDelete'), icon: 'trash', danger: true, disabled: !canDrag, run: () => onDelete(task) },
+          ] : []),
+        ])
+      }
+      const endDrag = () => {
+        dragRef.current = null
+        setDragged(null)
+        setHover('')
+      }
+      const startDrag = (event, task, sourceKey, sourceCategory) => {
+        if (!canDrag) { event.preventDefault(); return }
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('application/x-outlook-plan', 'move')
+        dragRef.current = { task, sourceKey, sourceCategory }
+        setDragged(task)
+      }
+      const dropTarget = (key, change, hint) => ({
+        preview: hover === key && dragged
+          ? h('div', { className: 'ob-plan-drop-preview', 'aria-hidden': true }, h('strong', null, dragged.title), h('span', null, hint))
+          : null,
+        events: {
+          onDragOver: (event) => {
+            if (!canDrag || !dragRef.current || dragRef.current.sourceKey === key) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+            setHover(key)
+          },
+          onDragLeave: (event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setHover((current) => current === key ? '' : current)
+          },
+          onDrop: (event) => {
+            const active = dragRef.current
+            if (!canDrag || !active || active.sourceKey === key) return
+            event.preventDefault()
+            endDrag()
+            const { task, sourceCategory } = active
+            if ('dueDate' in change && (task.due?.slice(0, 10) ?? null) === change.dueDate) return
+            if ('category' in change && (change.category === sourceCategory || (change.category === null && !task.categories?.length))) return
+            onMove(task, { ...change, sourceCategory })
+          },
+        },
+      })
+      const dateTarget = (key, date) => dropTarget(key, { dueDate: date },
+        date ? t('todo.dropDate', { date }) : t('todo.dropNoDate'))
+      let categoryTarget = null
+      if (showOverdue) categoryTarget = dateTarget('overdue', addDaysYmd(today, -1))
+      else if (categoryName) categoryTarget = dropTarget(categoryKey, { category: categoryName },
+        t('todo.dropCategory', { name: categoryName }))
+      const rows = (items, sourceKey, sourceCategory) => items.length ? h(TodoRows, {
+        tasks: items, t, busy, onToggle, canDrag, dragged, sourceKey, sourceCategory, onStartDrag: startDrag, onEndDrag: endDrag,
+        onContextTask,
+      }) : null
+      const panel = (label, items, key, date, region) => h(TodoPanel, {
+        label: t(label), count: items.length, empty: t('todo.empty'), target: dateTarget(key, date), surface: surfaceOf(region),
+      }, rows(items, key))
+      return h('section', { className: 'ob-todo-page', 'aria-label': t('todo.title') },
+        error ? h('div', { className: 'ob-error ob-plan-sync-error', role: 'alert' },
+          h('span', null, error, stale ? ` ${t('todo.stale')}` : ''),
+          h('button', { type: 'button', className: 'ob-btn', disabled: busy, onClick: onRefresh }, t('action.refresh'))) : null,
+        connected ? null : h('div', { className: 'ob-banner' }, t('todo.demo')),
+        h('header', { className: 'ob-plan-header', style: surfaceOf('todoCreate') },
+          h('div', { className: 'ob-plan-heading' },
+            h('h2', null, t('todo.title')),
+            h('div', { className: 'ob-plan-heading-details' },
+              h('span', { className: 'ob-plan-summary' }, t('todo.summary', { count: groups.all.length })),
+              connected ? h('div', { className: 'ob-plan-hints' },
+                h('span', { className: 'ob-plan-drag-hint' }, t('todo.dragHint')),
+                h('span', { className: 'ob-plan-drag-hint' }, t('todo.dateHint'))) : null)),
+          h('form', { className: 'ob-todo-form', onSubmit: async (event) => {
+            event.preventDefault()
+            if (!canAdd || !draftPlan.title) return
+            setListId(selectedList.id)
+            if (await onCreate(selectedList, draftPlan.title, selectedDueDate)) {
+              setTitle('')
+              setDueDate('')
+            }
+          } },
+            h('label', null, t('todo.list'),
+              h('select', { className: 'ob-input', value: selectedList?.id ?? '', disabled: busy || lists.length === 0,
+                onChange: (event) => setListId(event.target.value) },
+                selectedList ? null : h('option', { value: '', disabled: true }, t(lists.length ? 'todo.chooseList' : 'todo.noLists')),
+                lists.map((list) => h('option', { key: list.id, value: list.id }, list.name)))),
+            h('input', { className: 'ob-input ob-todo-input', value: title, maxLength: 255, disabled: !canAdd,
+              placeholder: t('todo.newWithDate'), 'aria-label': t('todo.new'), onChange: (event) => setTitle(event.target.value) }),
+            h('button', { type: 'submit', className: 'ob-btn primary', disabled: !canAdd || !draftPlan.title }, t('todo.add')),
+            h('div', { className: 'ob-todo-due-row' },
+              h('label', null, t('todo.dueDate'), h('input', { className: 'ob-input', type: 'date', value: selectedDueDate,
+                disabled: !canAdd, onChange: (event) => chooseDueDate(event.target.value),
+                onMouseDown: (event) => {
+                  if (event.button === 0 && typeof event.currentTarget.showPicker === 'function') event.preventDefault()
+                },
+                onClick: (event) => {
+                  const field = event.currentTarget
+                  if (field.disabled || typeof field.showPicker !== 'function') return
+                  try {
+                    field.showPicker()
+                    event.preventDefault()
+                  } catch { /* Let the native calendar button handle the click. */ }
+                },
+              })),
+              [[today, 'calendar.today'], [tomorrow, 'calendar.tomorrow']].map(([date, label]) =>
+                h('button', { key: label, type: 'button', className: 'ob-btn', disabled: !canAdd,
+                  'aria-pressed': selectedDueDate === date, onClick: () => chooseDueDate(date) }, t(label)))))),
+        h('div', { className: 'ob-plan-grid' },
+          h('div', { className: 'ob-plan-side' },
+            h(TodoPanel, { label: t('todo.categories'), count: categoryTasks.length,
+              surface: surfaceOf('todoCategories'),
+              empty: t(showOverdue ? 'todo.noOverdue' : 'todo.empty'), overdue: showOverdue, target: categoryTarget,
+              headerControl: h('select', { className: 'ob-plan-category-filter', value: categoryKey,
+                'aria-label': t('todo.categoryFilter'), onChange: (event) => setCategoryFilter(event.target.value) },
+                h('option', { value: 'overdue' }, t('todo.overdue')),
+                lists.map((list) => h('option', { key: list.id, value: `list:${list.id}` }, list.name)),
+                categoryNames.length ? h('optgroup', { label: t('todo.categories') }, categoryNames.map((name) =>
+                  h('option', { key: name, value: `category:${name}` }, name))) : null),
+            }, rows(categoryTasks, categoryKey, categoryName)),
+            h(TodoPanel, { label: t('todo.completed'), count: groups.completed.length, empty: t('todo.noCompleted'),
+              surface: surfaceOf('todoCompleted'),
+              headerControl: h('div', { className: 'ob-plan-sort' },
+                h('select', { value: completedSort.field, 'aria-label': t('todo.sortCompleted'), onChange: (event) => {
+                  const field = event.target.value
+                  onCompletedSort((current) => ({ ...current, field }))
+                } },
+                  h('option', { value: 'completedAt' }, t('todo.sortCompletion')),
+                  h('option', { value: 'createdAt' }, t('todo.sortCreation'))),
+                h('button', { type: 'button', className: 'ob-btn ob-plan-sort-direction',
+                  'aria-label': t('todo.sortAscending'), 'aria-pressed': completedSort.ascending,
+                  onClick: () => onCompletedSort((current) => ({ ...current, ascending: !current.ascending })),
+                }, completedSort.ascending ? '↑' : '↓')),
+            },
+              rows(groups.completed, 'completed'))),
+          panel('todo.all', groups.all, 'all', null, 'todoAll'),
+          panel('calendar.today', groups.today, 'today', today, 'todoToday'),
+          panel('calendar.tomorrow', groups.tomorrow, 'tomorrow', tomorrow, 'todoTomorrow')))
     }
 
     /* ------------------------------------------------------ connect views */
@@ -2946,6 +3409,31 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function SetupGuide({ t, connected, busy, onOpenEntra, onSettings, onConnect, onClose }) {
+      const entraUrl = 'https://entra.microsoft.com/'
+      const steps = [
+        ['register', h('a', { className: 'ob-btn', href: entraUrl, target: '_blank', rel: 'noopener noreferrer',
+          onClick: (event) => { if (onOpenEntra(entraUrl)) event.preventDefault() } }, t('guide.openEntra'))],
+        ['publicClient'],
+        ['configure', h('button', { type: 'button', className: 'ob-btn', onClick: onSettings }, t('guide.openSettings'))],
+        ['authorize', h('button', { type: 'button', className: 'ob-btn primary', disabled: busy, onClick: onConnect },
+          t(connected ? 'action.reauth' : 'action.connect'))],
+      ]
+      return h('div', { className: 'ob-modal-mask',
+        onClick: (event) => { if (event.target === event.currentTarget) onClose() } },
+        h('section', { className: 'ob-modal ob-guide-dialog', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'ob-guide-title',
+          onKeyDown: (event) => { if (event.key === 'Escape') onClose() } },
+          h('header', { className: 'ob-modal-head' },
+            h('span', { id: 'ob-guide-title' }, t('guide.title')),
+            h('button', { type: 'button', className: 'ob-btn', autoFocus: true, onClick: onClose }, t('action.close'))),
+          h('div', { className: 'ob-guide-body' },
+            h('p', null, t('guide.intro')),
+            h('ol', { className: 'ob-guide-steps' }, steps.map(([key, action], index) =>
+              h('li', { key },
+                h('span', { className: 'ob-guide-number', 'aria-hidden': true }, index + 1),
+                h('div', null, h('h3', null, t(`guide.${key}`)), h('p', null, t(`guide.${key}Help`)), action)))))))
+    }
+
     function SettingsPanel(props) {
       const { t, draft, setDraft, onSave, onClose, busy } = props
       const field = (label, key, type) =>
@@ -3011,7 +3499,9 @@ window.__ModuleLoader__.load({
       const [draft, setDraft] = React.useState({ clientId: '', clientSecret: '', tenant: 'consumers', demo: true, mailTop: 12, eventDays: 7 })
       const [paste, setPaste] = React.useState('')
       const [view, setView] = React.useState('mail')
+      const [completedSort, setCompletedSort] = React.useState({ field: 'completedAt', ascending: false })
       const [showUi, setShowUi] = React.useState(false)
+      const [showGuide, setShowGuide] = React.useState(false)
       const [appearance, setAppearance] = React.useState(null)
       const [replyRequest, setReplyRequest] = React.useState(null)
       const [category, setCategory] = React.useState('all')
@@ -3035,7 +3525,11 @@ window.__ModuleLoader__.load({
         api('/state')
           .then((state) => {
             if (!alive || !state?.settings) return
-            if (state.settings.appearance) setAppearance(state.settings.appearance)
+            if (state.settings.appearance) {
+              const stored = state.settings.appearance
+              setAppearance((current) => Object.fromEntries(Object.values(appearanceGroups).flat().map((key) =>
+                [key, { ...stored[key], ...current?.[key] }])))
+            }
             setDraft({
               clientId: state.settings.clientId ?? '',
               clientSecret: '',
@@ -3409,58 +3903,134 @@ window.__ModuleLoader__.load({
         if (!row) return undefined
         const opacity = Number.isFinite(Number(row.opacity)) ? Number(row.opacity) : 100
         const blur = Number.isFinite(Number(row.blur)) ? Number(row.blur) : 0
-        const style = {
-          background: `color-mix(in srgb, var(--dsw-alias-bg-layer-1) ${opacity}%, transparent)`,
-        }
+        const style = {}
+        const isPanel = appearanceSharedLabels[key] === 'panel'
+        style[isPanel ? '--ob-panel-opacity' : '--ob-region-strength'] = isPanel ? `${opacity}%` : opacity / 100
         if (blur > 0) {
-          style.backdropFilter = `blur(${blur}px)`
-          style.WebkitBackdropFilter = `blur(${blur}px)`
+          style[isPanel ? '--ob-panel-filter' : '--ob-region-filter'] = `blur(${blur}px)`
         }
         return style
       }
 
       const saveAppearance = React.useCallback(async () => {
         setBusy(true)
-        setError(null)
         try {
           await api('/settings', { method: 'POST', body: { appearance } })
-          setNotice(t('ui.saved'))
-        } catch (failure) {
-          setError(failure.message)
         } finally {
           setBusy(false)
         }
-      }, [appearance, t])
+      }, [appearance])
 
       const resetAppearance = React.useCallback(() => {
-        const blank = {}
-        for (const key of ['panel', 'mail', 'calendar', 'todo', 'reply']) blank[key] = { opacity: 100, blur: 0 }
-        setAppearance(blank)
+        setAppearance(Object.fromEntries(Object.values(appearanceGroups).flat().map((key) =>
+          [key, { opacity: 100, blur: 0 }])))
       }, [])
+
+      const addTask = React.useCallback(async (list, title, dueDate) => {
+        setBusy(true)
+        setError(null)
+        setNotice(null)
+        try {
+          const { task } = await api('/task/create', { method: 'POST', body: { listId: list.id, title, dueDate } })
+          await store.inflight
+          const tasks = store.snapshot?.tasks ?? []
+          if (!tasks.some((row) => row.id === task.id && row.listId === list.id)) {
+            store.patch({ tasks: [{ ...task, listName: list.name }, ...tasks] })
+          }
+          return true
+        } catch (failure) {
+          if (failure.status === 404) {
+            await store.inflight
+            await store.load(true)
+            setError(t('todo.listMissing'))
+          } else {
+            setError(failure.message)
+          }
+          return false
+        } finally {
+          setBusy(false)
+        }
+      }, [t])
+
+      const handleTaskError = React.useCallback(async (task, failure) => {
+        if (failure.status !== 404) {
+          setError(failure.message)
+          return
+        }
+        await store.inflight
+        await store.load(true)
+        const snap = store.snapshot
+        const stillListed = snap?.tasks?.some((item) => item.id === task.id && item.listId === task.listId)
+        if (!store.error && !snap?.taskError && !stillListed) setNotice(t('todo.taskGone'))
+        else setError(t('todo.taskMissing'))
+      }, [t])
+
+      const movePlanTask = React.useCallback(async (task, changes) => {
+        setBusy(true)
+        setError(null)
+        setNotice(null)
+        try {
+          const result = await api('/task/move', {
+            method: 'POST', body: { listId: task.listId, taskId: task.id, ...changes },
+          })
+          await store.inflight
+          store.patch({ tasks: (store.snapshot?.tasks ?? []).map((item) =>
+            item.id === task.id && item.listId === task.listId
+              ? { ...item, ...result.task, listName: item.listName } : item) })
+        } catch (failure) {
+          await handleTaskError(task, failure)
+        } finally {
+          setBusy(false)
+        }
+      }, [handleTaskError])
+
+      const deletePlanTask = React.useCallback(async (task) => {
+        setBusy(true)
+        setError(null)
+        setNotice(null)
+        try {
+          await api('/task/delete', { method: 'POST', body: { listId: task.listId, taskId: task.id } })
+          await store.inflight
+          const tasks = (store.snapshot?.tasks ?? []).filter((item) => item.id !== task.id || item.listId !== task.listId)
+          store.patch({ tasks })
+        } catch (failure) {
+          await handleTaskError(task, failure)
+        } finally {
+          setBusy(false)
+        }
+      }, [handleTaskError])
 
       const toggleTask = React.useCallback(async (task) => {
         setBusy(true)
+        setError(null)
+        setNotice(null)
         try {
-          await api('/task/complete', {
+          const completed = !task.completed
+          const result = await api('/task/complete', {
             method: 'POST',
-            body: { listId: task.listId, taskId: task.id, completed: true },
+            body: { listId: task.listId, taskId: task.id, completed },
           })
+          await store.inflight
           store.patch({
-            tasks: (store.snapshot?.tasks ?? []).filter(
-              (item) => !(item.id === task.id && item.listId === task.listId),
+            tasks: (store.snapshot?.tasks ?? []).map(
+              (item) => item.id === task.id && item.listId === task.listId
+                ? { ...item, ...result.task, listName: item.listName, completed,
+                    completedAt: completed ? result.task?.completedAt || new Date().toISOString() : null }
+                : item,
             ),
           })
         } catch (failure) {
-          setError(failure.message)
+          await handleTaskError(task, failure)
         } finally {
           setBusy(false)
         }
-      }, [])
+      }, [handleTaskError])
 
 
       const submitAiCommand = React.useCallback(async () => {
         const text = String(aiText || '').trim()
         if (!text || aiBusy) return
+        const initialSnapshot = store.snapshot
         setAiBusy(true)
         setAiErr(null)
         setAiMsg('处理中…')
@@ -3515,6 +4085,18 @@ window.__ModuleLoader__.load({
               setCalendarNonce((n) => n + 1)
               try { await store.load(true) } catch { /* ignore */ }
             }
+          } else if (intent === 'task' && result.task) {
+            const current = store.snapshot
+            if (!initialSnapshot?.connected || !current?.connected || current.account?.mail !== initialSnapshot.account?.mail) {
+              throw new Error('请连接当前 Outlook 账户后再添加计划')
+            }
+            const list = current.taskLists?.find((item) => item.isDefault)
+            if (!list) throw new Error('找不到默认「任务」清单，请刷新后再试')
+            const { title, dueDate } = result.task
+            if (!await addTask(list, title, dueDate)) throw new Error('计划未创建，请查看错误提示后重试')
+            setAiText('')
+            setAiMsg(dueDate ? `计划已创建，截止 ${dueDate}` : '计划已创建')
+            setView('todo')
           } else if (intent === 'mail' && result.mail) {
             const mail = result.mail
             setCompose({ to: mail.to || '', subject: mail.subject || '', body: mail.body || '' })
@@ -3522,7 +4104,7 @@ window.__ModuleLoader__.load({
             setAiMsg(usedFallback || result.fallback ? '已预填邮件草稿，请核对后发送' : '已打开邮件草稿，请核对后发送')
           } else {
             setAiMsg(null)
-            setAiErr(result?.reply || '未能识别意图，请试试添加日程或写邮件')
+            setAiErr(result?.reply || '未能识别意图，请试试添加计划、添加日程或写邮件')
           }
         } catch (failure) {
           setAiMsg(null)
@@ -3530,9 +4112,10 @@ window.__ModuleLoader__.load({
         } finally {
           setAiBusy(false)
         }
-      }, [aiText, aiBusy])
+      }, [aiText, aiBusy, addTask])
 
       const connected = Boolean(snap?.connected)
+      const layoutView = view === 'todo' ? 'mail' : view
       const demo = Boolean(snap?.demo)
       const needsConnect = snap !== null && !connected && !demo
       const subtitle = connected
@@ -3574,21 +4157,14 @@ window.__ModuleLoader__.load({
         return h(
           React.Fragment,
           null,
-          error ? h('div', { className: 'ob-error' }, error) : null,
-          notice ? h('div', { className: 'ob-banner' }, notice) : null,
-          demo
-            ? h(
-                'div',
-                { className: 'ob-banner' },
-                h('span', null, t('notice.demo')),
-                h('span', { className: 'ob-spacer' }),
-                h(
-                  'button',
-                  { type: 'button', className: 'ob-btn primary', onClick: startConnect, disabled: busy },
-                  t('action.connect'),
-                ),
-              )
-            : null,
+          error || notice || demo ? h('div', { className: 'ob-body-feedback' },
+            error ? h('div', { className: 'ob-error', role: 'alert' }, error) : null,
+            notice ? h('div', { className: 'ob-banner', role: 'status' }, notice) : null,
+            demo ? h('div', { className: 'ob-banner' },
+              h('span', null, t('notice.demo')),
+              h('span', { className: 'ob-spacer' }),
+              h('button', { type: 'button', className: 'ob-btn primary', onClick: startConnect, disabled: busy },
+                t('action.connect'))) : null) : null,
           code
             ? h(ConnectPanel, {
                 t,
@@ -3607,15 +4183,22 @@ window.__ModuleLoader__.load({
                 onOpenSettings: openSettings,
               })
             : null,
-          view === 'calendar'
-            ? h(CalendarPage, {
+          view === 'todo'
+            ? h(TodoPage, {
+                t, lists: snap.taskLists ?? [], tasks: snap.tasks ?? [], error: snap.taskError,
+                stale: snap.taskStale, connected, busy, onCreate: addTask, onToggle: toggleTask, onMove: movePlanTask,
+                onDelete: deletePlanTask, onRefresh: refresh, completedSort, onCompletedSort: setCompletedSort,
+                surfaceOf,
+              })
+            : view === 'calendar'
+            ? h(MonthCalendar, {
                 t,
-                events: snap.events ?? [],
-                tasks: snap.tasks ?? [],
-                unsupported: snap.todoUnsupported,
+                tasks: (snap.tasks ?? []).filter((task) => !task.completed),
                 onToggle: toggleTask,
                 busy,
+                toolbarSurface: surfaceOf('calendarToolbar'),
                 surface: surfaceOf('calendar'),
+                listSurface: surfaceOf('calendarList'),
                 pendingCreate,
                 onPendingCreateConsumed: () => setPendingCreate(null),
                 calendarNonce,
@@ -3632,23 +4215,28 @@ window.__ModuleLoader__.load({
                   onReplyRow: (row) => { setSelected(row); setReplyRequest({ id: row.id, at: Date.now() }) },
                   replyRequest, onSendReply: sendReply,
                   onRefreshFolder: async (key) => { setFolder(key); setSelected(null); setFocus(key === 'inbox' ? 'focused' : 'all'); await loadFolderMail(key); await loadFolders() },
-                  surface: surfaceOf('mail'), readingSurface: surfaceOf('reply'),
+                  surface: surfaceOf('mail'),
+                  toolbarSurface: surfaceOf('mailToolbar'),
+                  folderSurface: surfaceOf('mailFolders'),
+                  readingSurface: surfaceOf('mailReading'),
                   timeOf: (row) => fmtMailTime(parseDate(row.receivedAt), t),
                 }),
           (snap.warnings ?? []).length > 0
-            ? h('div', { className: 'ob-error' }, (snap.warnings ?? []).join('; '))
+            ? h('div', { className: 'ob-body-feedback' },
+                h('div', { className: 'ob-error', role: 'alert' }, snap.warnings.join('；')))
             : null,
         )
       })()
 
       return h(
         'div',
-        { className: `ob-root${!showSettings && !needsConnect ? view === 'mail' ? ' ob-outlook-mail' : view === 'calendar' ? ' ob-outlook-calendar' : '' : ''}` },
+        { className: `ob-root${!showSettings && !needsConnect ? ` ob-outlook-${layoutView}` : ''}`,
+          style: surfaceOf(`${view}Panel`) },
         h(Sheet, null),
         h(ContextMenu, null),
         h(
           'header',
-          { className: 'ob-head' },
+          { className: 'ob-head', style: surfaceOf(`${view}Header`) },
           h('span', { className: 'ob-head-mark' }, mark(18)),
           h(
             'div',
@@ -3663,6 +4251,7 @@ window.__ModuleLoader__.load({
                 [
                   ['mail', t('tab.mail')],
                   ['calendar', t('tab.calendar')],
+                  ['todo', t('tab.todo')],
                 ].map(([key, label]) =>
                   h(
                     'button',
@@ -3681,9 +4270,12 @@ window.__ModuleLoader__.load({
             : null,
           h('span', { className: 'ob-spacer' }),
           demo ? h('span', { className: 'ob-chip demo' }, t('chip.demo')) : null,
-          connected
-            ? h('span', { className: 'ob-chip ok' }, 'Outlook')
-            : h('span', { className: 'ob-chip' }, t('chip.offline')),
+          h('div', { className: 'ob-guide-entry' },
+            connected
+              ? h('span', { className: 'ob-chip ok' }, 'Outlook')
+              : h('span', { className: 'ob-chip' }, t('chip.offline')),
+            h('button', { type: 'button', className: 'ob-btn', 'aria-haspopup': 'dialog', onClick: () => setShowGuide(true) },
+              t('guide.open'))),
           h(
             'button',
             {
@@ -3710,7 +4302,7 @@ window.__ModuleLoader__.load({
         Boolean(snap) && !showSettings && !needsConnect
           ? h(
               'div',
-              { className: 'ob-ai-wrap' },
+              { className: 'ob-ai-wrap', style: surfaceOf(`${view}AiBar`) },
               h(
                 'div',
                 { className: 'ob-ai-bar', role: 'search' },
@@ -3720,15 +4312,15 @@ window.__ModuleLoader__.load({
                 type: 'text',
                 value: aiText,
                 disabled: aiBusy,
-                placeholder: '试试：明天下午3点开会一小时 / 给 xxx 写一封关于…的邮件',
-                'aria-label': 'AI 对话：添加日程或写邮件',
+                placeholder: '试试：添加计划，明天交周报 / 明天下午3点开会 / 给 xxx 写邮件',
+                'aria-label': 'AI 对话：添加计划、添加日程或写邮件',
                 onChange: (event) => {
                   setAiText(event.target.value)
                   if (aiErr) setAiErr(null)
                   if (aiMsg && aiMsg !== '处理中…') setAiMsg(null)
                 },
                 onKeyDown: (event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent?.isComposing && event.keyCode !== 229) {
                     event.preventDefault()
                     submitAiCommand()
                   }
@@ -3815,9 +4407,17 @@ window.__ModuleLoader__.load({
               ),
             )
           : null,
+        showGuide ? h(SetupGuide, {
+          t, connected, busy: busy || showSettings, onOpenEntra: openInApp,
+          onSettings: () => { setShowGuide(false); if (!showSettings) openSettings() },
+          onConnect: () => { setShowGuide(false); startConnect() },
+          onClose: () => setShowGuide(false),
+        }) : null,
         showUi
           ? h(AppearancePage, {
               t,
+              view,
+              onView: setView,
               appearance,
               setAppearance,
               onSave: saveAppearance,

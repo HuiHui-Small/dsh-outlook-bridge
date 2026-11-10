@@ -14,6 +14,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { setTimeout as wait } from 'node:timers/promises'
 
 const API_PREFIX = '/outlook/api'
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
@@ -80,13 +81,30 @@ const DEFAULT_SETTINGS = {
   eventDays: 7,
   /** To-do lists read per snapshot. */
   todoLists: 3,
-  /** Per-region translucency for the panel surfaces. */
+  /** Per-region opacity and blur. */
   appearance: {
-    panel: { opacity: 100, blur: 0 },
+    mailPanel: { opacity: 100, blur: 0 },
+    mailHeader: { opacity: 100, blur: 0 },
+    mailAiBar: { opacity: 100, blur: 0 },
+    mailToolbar: { opacity: 100, blur: 0 },
+    mailFolders: { opacity: 100, blur: 0 },
     mail: { opacity: 100, blur: 0 },
+    mailReading: { opacity: 100, blur: 0 },
+    calendarPanel: { opacity: 100, blur: 0 },
+    calendarHeader: { opacity: 100, blur: 0 },
+    calendarAiBar: { opacity: 100, blur: 0 },
+    calendarToolbar: { opacity: 100, blur: 0 },
     calendar: { opacity: 100, blur: 0 },
-    todo: { opacity: 100, blur: 0 },
-    reply: { opacity: 100, blur: 0 },
+    calendarList: { opacity: 100, blur: 0 },
+    todoPanel: { opacity: 100, blur: 0 },
+    todoHeader: { opacity: 100, blur: 0 },
+    todoAiBar: { opacity: 100, blur: 0 },
+    todoCreate: { opacity: 100, blur: 0 },
+    todoCategories: { opacity: 100, blur: 0 },
+    todoCompleted: { opacity: 100, blur: 0 },
+    todoAll: { opacity: 100, blur: 0 },
+    todoToday: { opacity: 100, blur: 0 },
+    todoTomorrow: { opacity: 100, blur: 0 },
   },
 }
 
@@ -173,8 +191,11 @@ function sanitizeSettings(raw) {
   if (Number.isFinite(Number(raw.todoLists))) out.todoLists = clamp(Number(raw.todoLists), 1, 5)
   if (raw.appearance && typeof raw.appearance === 'object') {
     const next = {}
-    for (const key of ['panel', 'mail', 'calendar', 'todo', 'reply']) {
-      const value = raw.appearance[key]
+    const previousPlanKeys = { todoPanel: 'mailPanel', todoHeader: 'mailHeader', todoAiBar: 'mailAiBar' }
+    for (const key of Object.keys(DEFAULT_SETTINGS.appearance)) {
+      const previousKey = previousPlanKeys[key] ?? key
+      const value = raw.appearance[key] ?? raw.appearance[previousKey] ??
+        (previousKey === 'mailPanel' || previousKey === 'calendarPanel' ? raw.appearance.panel : undefined)
       if (!value || typeof value !== 'object') continue
       next[key] = {
         opacity: clamp(Number(value.opacity ?? 100), 0, 100),
@@ -473,7 +494,65 @@ async function connected() {
 
 /* ------------------------------------------------------------------ graph */
 
+// Outlook allows four concurrent requests per app and mailbox. Leave one slot
+// free for other clients using the same app registration.
+const GRAPH_SLOTS = 3
+let graphSlotsInUse = 0
+const graphQueue = []
+
+function drainGraphQueue() {
+  while (graphQueue.length && graphQueue[0].slots <= GRAPH_SLOTS - graphSlotsInUse) {
+    const entry = graphQueue.shift()
+    graphSlotsInUse += entry.slots
+    entry.start()
+  }
+}
+
+function acquireGraphSlots(slots, signal) {
+  signal.throwIfAborted()
+  return new Promise((resolve, reject) => {
+    const entry = {
+      slots,
+      start() {
+        signal.removeEventListener('abort', cancel)
+        resolve()
+      },
+    }
+    const cancel = () => {
+      const index = graphQueue.indexOf(entry)
+      if (index !== -1) graphQueue.splice(index, 1)
+      reject(signal.reason)
+      drainGraphQueue()
+    }
+    signal.addEventListener('abort', cancel, { once: true })
+    graphQueue.push(entry)
+    drainGraphQueue()
+  })
+}
+
+function graphRetryDelay(header, attempt) {
+  if (!header) return 750 * 2 ** attempt
+  const delay = /^\d+(?:\.\d+)?$/.test(header) ? Number(header) * 1000 : Date.parse(header) - Date.now()
+  return Number.isFinite(delay) ? Math.max(0, delay) : 750 * 2 ** attempt
+}
+
 async function graph(path, options = {}) {
+  const signal = options.signal ?? AbortSignal.timeout(30_000)
+  // A batch can occupy several Outlook slots even though it is one HTTP request.
+  const slots = path === '/$batch' ? GRAPH_SLOTS : 1
+  await acquireGraphSlots(slots, signal)
+  try {
+    return await requestGraph(path, options, signal)
+  } catch (error) {
+    signal.throwIfAborted()
+    throw error
+  } finally {
+    graphSlotsInUse -= slots
+    drainGraphQueue()
+  }
+}
+
+async function requestGraph(path, options, signal) {
   const token = await accessToken()
   if (!token) {
     const error = new Error('尚未连接 Outlook 账户')
@@ -482,28 +561,36 @@ async function graph(path, options = {}) {
   }
   const url = path.startsWith('http') ? path : `${GRAPH_BASE}${path}`
   const headers = { authorization: `Bearer ${token}`, accept: 'application/json', ...(options.headers ?? {}) }
-  const init = { method: options.method ?? 'GET', headers, ...(options.signal ? { signal: options.signal } : {}) }
+  const init = { method: options.method ?? 'GET', headers, signal }
   if (options.body !== undefined) {
     headers['content-type'] = 'application/json'
     init.body = JSON.stringify(options.body)
   }
-  const res = await fetch(url, init)
-  if (res.status === 204) return null
-  const text = await res.text()
-  let json = null
-  try {
-    json = text ? JSON.parse(text) : null
-  } catch {
-    json = null
-  }
-  if (!res.ok) {
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await fetch(url, init)
+    if (res.status === 204) return null
+    const text = await res.text()
+    let json = null
+    try {
+      json = text ? JSON.parse(text) : null
+    } catch {
+      json = null
+    }
+    if (res.ok) return json
     const detail = json?.error?.message || json?.error_description || `Graph 请求失败（HTTP ${res.status}）`
-    const error = new Error(detail)
-    error.code = 'graph_error'
+    const throttled = res.status === 429 || /MailboxConcurrency/i.test(`${json?.error?.code ?? ''} ${detail}`)
+    if (throttled) {
+      const delay = graphRetryDelay(res.headers.get('retry-after'), attempt)
+      if (attempt < 2 && delay <= 8000) {
+        await wait(delay, undefined, { signal })
+        continue
+      }
+    }
+    const error = new Error(throttled ? 'Outlook 正在限制邮箱请求，请稍后刷新。' : detail)
+    error.code = throttled ? 'graph_throttled' : 'graph_error'
     error.status = res.status
     throw error
   }
-  return json
 }
 
 async function fetchAccount(warnings) {
@@ -531,43 +618,88 @@ async function guarded(warnings, label, run) {
   }
 }
 
-async function fetchTasks(warnings, lists) {
-  let page
-  try {
-    page = await graph('/me/todo/lists?$select=id,displayName,wellknownListName&$top=10')
-  } catch (error) {
-    // Microsoft To Do's Graph API is work/school only; a personal account answers
-    // HTTP 400 "Invalid request". Treat it as "not available", not as a failure.
-    if (error?.status === 400 || error?.status === 403) {
-      const unsupported = new Error('个人 Microsoft 账户不支持微软待办 API')
-      unsupported.code = 'todo_unsupported'
-      throw unsupported
-    }
-    throw error
+function normalizeTask(task, list) {
+  return {
+    id: task.id,
+    listId: list.id,
+    listName: list.name,
+    title: task.title || '(无标题)',
+    importance: task.importance || 'normal',
+    due: task.dueDateTime?.dateTime ?? null,
+    categories: Array.isArray(task.categories) ? task.categories.filter((name) => typeof name === 'string' && name.trim()) : [],
+    completed: task.status === 'completed',
+    completedAt: task.status === 'completed' ? task.completedDateTime?.dateTime ?? null : null,
+    createdAt: task.createdDateTime ?? null,
   }
-  const picked = (page?.value ?? []).slice(0, lists)
+}
+
+async function fetchPlanPage(path, deadline) {
+  for (let attempt = 0; ; attempt += 1) {
+    const timeout = AbortSignal.timeout(6000)
+    const signal = deadline ? AbortSignal.any([timeout, deadline]) : timeout
+    try {
+      return await graph(path, { signal })
+    } catch (error) {
+      const interrupted = error.name === 'TimeoutError' ||
+        (error instanceof TypeError && ['fetch failed', 'terminated'].includes(error.message))
+      if (!interrupted) throw error
+      if (attempt === 1 || deadline?.aborted) {
+        throw new Error('暂时无法连接 Microsoft To Do，请检查网络后重试。', { cause: error })
+      }
+    }
+  }
+}
+
+async function fetchTasks(warnings, listLimit) {
+  const page = await fetchPlanPage('/me/todo/lists')
+  const available = page?.value ?? []
+  // Keep the default Tasks list in the snapshot even when the account has many lists.
+  const defaultFirst = (list) => Number(list.wellknownListName === 'defaultList')
+  const lists = [...available].sort((a, b) => defaultFirst(b) - defaultFirst(a)).slice(0, listLimit).map((list) => ({
+    id: list.id,
+    name: list.displayName || '待办',
+    isDefault: list.wellknownListName === 'defaultList',
+    canDeleteTasks: isRegularTaskList(list) || list.wellknownListName === 'flaggedEmails',
+  }))
   const rows = []
-  for (const list of picked) {
-    const tasks = await guarded(warnings, `待办列表 ${list.displayName || ''}`, () =>
-      graph(
-        `/me/todo/lists/${encodeURIComponent(list.id)}/tasks?$filter=status ne 'completed'&$top=20` +
-          '&$select=id,title,status,importance,dueDateTime',
-      ),
-    )
-    for (const task of tasks?.value ?? []) {
-      rows.push({
-        id: task.id,
-        listId: list.id,
-        listName: list.displayName || '待办',
-        title: task.title || '(无标题)',
-        importance: task.importance || 'normal',
-        due: task.dueDateTime?.dateTime ?? null,
-        completed: task.status === 'completed',
-      })
+  for (const list of lists) {
+    const tasks = await guarded(warnings, `计划清单 ${list.name}`, () => fetchListTasks(list, warnings))
+    rows.push(...(tasks ?? []))
+  }
+  const open = rows.filter((task) => !task.completed)
+    .sort((a, b) => String(a.due ?? '9999').localeCompare(String(b.due ?? '9999'))).slice(0, 40)
+  const completed = rows.filter((task) => task.completed)
+    .sort((a, b) => String(b.completedAt ?? '').localeCompare(String(a.completedAt ?? ''))).slice(0, 40)
+  return { lists, tasks: [...open, ...completed] }
+}
+
+function isRegularTaskList(list) {
+  return ['none', 'defaultList'].includes(list?.wellknownListName)
+}
+
+async function fetchListTasks(list, warnings) {
+  // Some To Do lists reject OData options on this endpoint. Read the list
+  // directly and partition locally. Keep separate limits so completed history
+  // cannot displace open plans, and scan every page to find recent completions.
+  const deadline = AbortSignal.timeout(12_000)
+  const rows = []
+  let pagePath = `/me/todo/lists/${encodeURIComponent(list.id)}/tasks`
+  while (pagePath) {
+    const page = await guarded(warnings, `计划清单 ${list.name}`, () => fetchPlanPage(pagePath, deadline))
+    if (!page) break
+    for (const task of page?.value ?? []) {
+      rows.push(normalizeTask(task, list))
+    }
+    pagePath = page?.['@odata.nextLink']
+    if (pagePath && (typeof pagePath !== 'string' || !pagePath.startsWith(`${GRAPH_BASE}/`))) {
+      throw new Error('Microsoft To Do 返回了无法识别的分页地址。')
     }
   }
-  rows.sort((a, b) => String(a.due ?? '9999').localeCompare(String(b.due ?? '9999')))
-  return rows.slice(0, 40)
+  return [
+    ...rows.filter((task) => !task.completed).slice(0, 20),
+    ...rows.filter((task) => task.completed)
+      .sort((a, b) => String(b.completedAt ?? '').localeCompare(String(a.completedAt ?? ''))).slice(0, 40),
+  ]
 }
 
 /** Well-known folders shown in the panel rail, in Outlook's order. */
@@ -653,8 +785,8 @@ async function markFolderRead(folder) {
   const ids = [...unreadIds]
   let marked = 0
   try {
-    for (let offset = 0; offset < ids.length; offset += 20) {
-      const requests = ids.slice(offset, offset + 20).map((id, index) => ({
+    for (let offset = 0; offset < ids.length; offset += GRAPH_SLOTS) {
+      const requests = ids.slice(offset, offset + GRAPH_SLOTS).map((id, index) => ({
         id: String(index + 1),
         method: 'PATCH',
         url: `${folderPath}/${encodeURIComponent(id)}`,
@@ -803,16 +935,17 @@ function htmlToPlainText(value) {
   return text.replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+function validDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00Z`)
+  return Number.isFinite(+parsed) && parsed.toISOString().slice(0, 10) === value
+}
+
 /** Create an event in the selected writable calendar. End dates in the form are inclusive for all-day events. */
 async function createEvent(input) {
   const subject = String(input?.subject || '').trim()
   if (!subject) throw new Error('日程标题不能为空')
   if (subject.length > 255) throw new Error('日程标题不能超过 255 个字符')
-  const validDate = (value) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-    const parsed = new Date(`${value}T00:00:00Z`)
-    return Number.isFinite(+parsed) && parsed.toISOString().slice(0,10) === value
-  }
   const date = String(input?.date || '')
   const endDate = String(input?.endDate || date)
   if (!validDate(date) || !validDate(endDate)) throw new Error('日期格式无效')
@@ -976,11 +1109,11 @@ async function buildSnapshot(force) {
     data = state.settings.demo ? demoSnapshot() : emptySnapshot()
   } else {
     const warnings = []
-    let todoUnsupported = false
+    const taskWarnings = []
     const settings = state.settings
     const start = new Date()
     const end = new Date(start.getTime() + settings.eventDays * 86_400_000)
-    const [inbox, mail, calendar, tasks] = await Promise.all([
+    const [inbox, mail, calendar, todo] = await Promise.all([
       guarded(warnings, '收件箱统计', () => graph('/me/mailFolders/inbox?$select=displayName,unreadItemCount,totalItemCount')),
       guarded(warnings, '邮件列表', () =>
         graph(
@@ -990,18 +1123,7 @@ async function buildSnapshot(force) {
         ),
       ),
       guarded(warnings, '日历', () => fetchCalendar(warnings, settings)),
-      (async () => {
-        try {
-          return await fetchTasks(warnings, settings.todoLists)
-        } catch (error) {
-          if (error?.code === 'todo_unsupported') {
-            todoUnsupported = true
-            return []
-          }
-          warnings.push(`待办：${error.message}`)
-          return []
-        }
-      })(),
+      guarded(taskWarnings, '同步计划失败', () => fetchTasks(taskWarnings, settings.todoLists)),
     ])
     const mailRows = normalizeMail(mail?.value)
     const account = await fetchAccount(warnings)
@@ -1013,8 +1135,9 @@ async function buildSnapshot(force) {
       inboxTotal: Number(inbox?.totalItemCount ?? mailRows.length),
       mail: mailRows,
       events: Array.isArray(calendar) ? calendar : normalizeEvents(calendar?.value),
-      tasks: tasks ?? [],
-      todoUnsupported: todoUnsupported === true,
+      taskLists: todo?.lists ?? [],
+      tasks: todo?.tasks ?? [],
+      taskError: taskWarnings.join('；'),
       warnings,
     }
   }
@@ -1026,7 +1149,7 @@ async function buildSnapshot(force) {
 }
 
 function emptySnapshot() {
-  return { connected: false, demo: false, account: null, unread: 0, inboxTotal: 0, mail: [], events: [], tasks: [], warnings: [] }
+  return { connected: false, demo: false, account: null, unread: 0, inboxTotal: 0, mail: [], events: [], taskLists: [], tasks: [], warnings: [] }
 }
 
 /* ------------------------------------------------------------------ demo */
@@ -1180,6 +1303,7 @@ function demoSnapshot() {
         webLink: null,
       },
     ],
+    taskLists: [{ id: 'demo-list', name: '任务' }],
     tasks: [
       { id: 'demo-t1', listId: 'demo-list', listName: '任务', title: '提交本周周报', importance: 'high', due: localIso(today, 18, 0), completed: false },
       { id: 'demo-t2', listId: 'demo-list', listName: '任务', title: '回复合同条款邮件', importance: 'normal', due: localIso(tomorrow, 12, 0), completed: false },
@@ -1346,11 +1470,13 @@ async function parseAiCommand(ctx, text, signal) {
     '时区固定为 Asia/Shanghai。今天是 ' + today + '，当前时间约 ' + nowTime + '。',
     '把相对日期（今天/明天/后天/下周X）换成 YYYY-MM-DD；时间用 HH:mm（24 小时）。',
     '若提到时长（如 30 分钟/一小时）但没有结束时间，请用开始时间加上时长得到 endTime。',
-    'intent 只能是 calendar、mail 或 unknown。',
+    'intent 只能是 calendar、mail、task 或 unknown。',
     'calendar：创建日程。字段 subject, date, endDate, startTime, endTime, allDay, location, body；缺省 endDate=date，缺省时长 30 分钟，缺省 startTime 若无则 09:00。',
     'mail：起草邮件。字段 to（邮箱，多个逗号分隔）, subject, body。邮件由用户核对后手动发送。',
+    'task：只用于明确要新建一项计划、待办或任务。字段 title 为简洁标题（不含截止日期），dueDate 为 YYYY-MM-DD 或空字符串。未指定截止日期时留空。没有年份的日期使用今年。标题末尾 /月.日 或 /年份.月.日 表示截止日期，只有完整有效的末尾日期才从标题移除。',
+    '要求删除、完成、修改或查询现有计划时返回 unknown。写邮件是 mail，预约或开会是 calendar，记下要完成的事项是 task。',
     'reply 用一句简短中文确认将要做什么。起草邮件时说明草稿待核对。',
-    '输出唯一对象：{"intent":"calendar"|"mail"|"unknown","calendar":{"subject":"","date":"","endDate":"","startTime":"","endTime":"","allDay":false,"location":"","body":""},"mail":{"to":"","subject":"","body":""},"reply":""}',
+    '输出唯一对象：{"intent":"calendar"|"mail"|"task"|"unknown","calendar":{"subject":"","date":"","endDate":"","startTime":"","endTime":"","allDay":false,"location":"","body":""},"mail":{"to":"","subject":"","body":""},"task":{"title":"","dueDate":""},"reply":""}',
   ].join('\n')
 
   const prepared = await ctx.get('llm').prepareCall(
@@ -1397,7 +1523,7 @@ async function parseAiCommand(ctx, text, signal) {
   } catch {
     throw new Error('AI 返回无法解析的 JSON，请重试')
   }
-  const intent = ['calendar', 'mail', 'unknown'].includes(parsed?.intent) ? parsed.intent : 'unknown'
+  const intent = ['calendar', 'mail', 'task', 'unknown'].includes(parsed?.intent) ? parsed.intent : 'unknown'
   const calendar = {
     subject: String(parsed?.calendar?.subject || '').trim(),
     date: String(parsed?.calendar?.date || '').trim(),
@@ -1413,12 +1539,20 @@ async function parseAiCommand(ctx, text, signal) {
     subject: String(parsed?.mail?.subject || '').trim(),
     body: String(parsed?.mail?.body || '').trim(),
   }
-  const reply = String(parsed?.reply || '').trim() || (intent === 'calendar' ? '已解析日程' : intent === 'mail' ? '已解析邮件' : '未能识别意图')
+  const task = intent === 'task' ? {
+    title: typeof parsed.task?.title === 'string' ? parsed.task.title.trim() : '',
+    dueDate: typeof parsed.task?.dueDate === 'string' ? parsed.task.dueDate.trim() : '',
+  } : null
+  if (task && (!task.title || task.title.length > 255 || (task.dueDate && !validDate(task.dueDate)))) {
+    throw new Error('未能解析出有效的计划标题或截止日期，请检查后重试')
+  }
+  const reply = String(parsed?.reply || '').trim() || ({ calendar: '已解析日程', mail: '已解析邮件', task: '已解析计划' }[intent] ?? '未能识别意图')
   return {
     ok: true,
     intent,
     calendar,
     mail,
+    task,
     reply,
     model: status.model,
     provider: status.provider,
@@ -1448,18 +1582,88 @@ async function replyToMessage(id, comment) {
   return { ok: true }
 }
 
+function taskDueDateTime(date) {
+  return date ? { dateTime: `${date}T00:00:00`, timeZone: 'UTC' } : null
+}
+
+async function createTask(input) {
+  const title = typeof input?.title === 'string' ? input.title.trim() : ''
+  const listId = typeof input?.listId === 'string' ? input.listId.trim() : ''
+  if (!title || title.length > 255) return { ok: false, error: '请输入 1 到 255 个字符的计划标题' }
+  if (!listId) return { ok: false, error: '请选择计划清单' }
+  const dueDate = input?.dueDate ?? ''
+  if (dueDate !== '' && !validDate(dueDate)) return { ok: false, error: '截止日期无效' }
+  const task = await graph(`/me/todo/lists/${encodeURIComponent(listId)}/tasks`, {
+    method: 'POST',
+    body: { title, ...(dueDate ? { dueDateTime: taskDueDateTime(dueDate) } : {}) },
+  })
+  state.cache = null
+  return { ok: true, task: normalizeTask(task, { id: listId, name: '待办' }) }
+}
+
+async function moveTask(input) {
+  const { listId, taskId, dueDate, category, sourceCategory } = input ?? {}
+  if (typeof listId !== 'string' || !listId || typeof taskId !== 'string' || !taskId) {
+    return { ok: false, error: '缺少计划或清单 ID' }
+  }
+  const path = `/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`
+  let body
+  if (dueDate !== undefined) {
+    if (dueDate !== null && !validDate(dueDate)) return { ok: false, error: '截止日期无效' }
+    body = { dueDateTime: taskDueDateTime(dueDate) }
+  } else if (category === null) {
+    body = { categories: [] }
+  } else if (typeof category === 'string' && category.trim()) {
+    // Read the latest categories so a move can keep unrelated labels.
+    const task = await graph(path)
+    const remaining = (task.categories ?? []).filter((name) => name !== sourceCategory)
+    body = { categories: [...new Set([...remaining, category])] }
+  } else {
+    return { ok: false, error: '请选择计划的移动位置' }
+  }
+  const updated = await graph(path, { method: 'PATCH', body })
+  state.cache = null
+  return { ok: true, task: normalizeTask(updated ?? await graph(path), { id: listId, name: '待办' }) }
+}
+
 async function setTaskCompleted(listId, taskId, completed) {
   if (!taskId) return { ok: false, error: '缺少待办 id' }
   if (String(taskId).startsWith('demo-')) {
     const row = state.cache?.data?.tasks?.find((item) => item.id === taskId)
-    if (row) row.completed = completed
-    return { ok: true, demo: true }
+    if (row) {
+      row.completed = completed
+      row.completedAt = completed ? new Date().toISOString() : null
+    }
+    return { ok: true, demo: true, task: row }
   }
   if (!listId) return { ok: false, error: '缺少待办列表 id' }
-  await graph(`/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`, {
+  const path = `/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`
+  const updated = await graph(path, {
     method: 'PATCH',
     body: { status: completed ? 'completed' : 'notStarted' },
   })
+  state.cache = null
+  return { ok: true, task: normalizeTask(updated ?? await graph(path), { id: listId, name: '待办' }) }
+}
+
+async function deleteTask({ listId, taskId } = {}) {
+  const validId = (id) => typeof id === 'string' && id.trim() && id !== '.' && id !== '..'
+  if (!validId(listId) || !validId(taskId)) return { ok: false, error: '缺少有效的计划或清单 ID' }
+  const path = `/me/todo/lists/${encodeURIComponent(listId)}`
+  const list = await fetchPlanPage(path)
+  const taskPath = `${path}/tasks/${encodeURIComponent(taskId)}`
+  if (list?.wellknownListName === 'flaggedEmails') {
+    const links = await fetchPlanPage(`${taskPath}/linkedResources`)
+    if (!Array.isArray(links?.value) || links['@odata.nextLink']) {
+      return { ok: false, error: '无法确认这项计划的邮件关联，未删除计划' }
+    }
+    if (links.value.length) {
+      return { ok: false, error: '这项计划关联了邮件，请在 Outlook 中管理邮件标记' }
+    }
+  } else if (!isRegularTaskList(list)) {
+    return { ok: false, error: '此清单不支持删除计划' }
+  }
+  await graph(taskPath, { method: 'DELETE' })
   state.cache = null
   return { ok: true }
 }
@@ -1532,11 +1736,9 @@ async function openExternal(url) {
   }
   const host = parsed.hostname.toLowerCase()
   const allowed = ['microsoft.com', 'login.microsoft.com', 'login.microsoftonline.com', 'live.com', 'microsoftonline.com']
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password ||
-      !allowed.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+  if (!allowed.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
     throw new Error(`拒绝打开非微软域名：${host}`)
   }
-  url = parsed.href
   const options = { detached: true, stdio: 'ignore' }
   if (process.platform === 'win32') {
     // A URL on a `cmd` command line loses everything from its first `&`, which
@@ -1688,7 +1890,6 @@ function admission(ctx, req) {
     }
   } catch (error) {
     ctx.logger?.debug?.(`outlook-bridge: admission probe failed: ${error?.message ?? error}`)
-    return 403
   }
   return 0
 }
@@ -1782,8 +1983,8 @@ export function apply(ctx, config) {
 
       if (route === '/settings' && method === 'POST') {
         const body = await readBody(req)
-        await saveSettings(body)
-        send(res, 200, { ok: true })
+        const settings = await saveSettings(body)
+        send(res, 200, { ok: true, settings })
         return
       }
 
@@ -1821,7 +2022,7 @@ export function apply(ctx, config) {
           state.pending?.verificationUriComplete ||
           `${SIGNIN_URL}?otc=${encodeURIComponent(state.pending?.userCode || '')}`
         const opened = await openExternal(target)
-        noteAuth({ stage: 'open-signin' })
+        noteAuth({ stage: 'open-signin', url: opened })
         send(res, 200, { ok: true, url: opened })
         return
       }
@@ -2033,9 +2234,24 @@ export function apply(ctx, config) {
         return
       }
 
+      if (route === '/task/create' && method === 'POST') {
+        send(res, 200, await createTask(await readBody(req)))
+        return
+      }
+
+      if (route === '/task/move' && method === 'POST') {
+        send(res, 200, await moveTask(await readBody(req)))
+        return
+      }
+
       if (route === '/task/complete' && method === 'POST') {
         const body = await readBody(req)
         send(res, 200, await setTaskCompleted(body.listId, body.taskId, Boolean(body.completed)))
+        return
+      }
+
+      if (route === '/task/delete' && method === 'POST') {
+        send(res, 200, await deleteTask(await readBody(req)))
         return
       }
 
@@ -2044,7 +2260,10 @@ export function apply(ctx, config) {
       const code = error?.code || 'failed'
       const message = error?.message || String(error)
       ctx.logger?.debug?.(`outlook-bridge: ${method} ${route} failed: ${message}`)
-      if (!res.destroyed && !res.writableEnded) send(res, code === 'client_id_missing' ? 400 : 500, { ok: false, error: message, code })
+      const taskMissing = error?.status === 404 && ['/task/create', '/task/complete', '/task/move', '/task/delete'].includes(route)
+      if (!res.destroyed && !res.writableEnded) {
+        send(res, taskMissing ? 404 : code === 'client_id_missing' ? 400 : 500, { ok: false, error: message, code })
+      }
     }
   }
 
