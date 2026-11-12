@@ -1,7 +1,7 @@
 {
   "name": "dsh-outlook-bridge",
-  "version": "0.3.0",
-  "description": "Outlook mail and calendar for DeepSeek Harness, with unread badges, bulk mark as read, and AI-assisted email drafts.",
+  "version": "0.4.0",
+  "description": "Outlook mail, calendar and Microsoft To Do for DeepSeek Harness, with AI translation and draft assistance.",
   "type": "module",
   "main": "index.js",
   "license": "MIT",
@@ -37,6 +37,10 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HuiHui-Small/dsh-outlook-bridge.git"
   },
   "dsh": {
     "bundle": {

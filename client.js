@@ -144,6 +144,7 @@ window.__ModuleLoader__.load({
         'tab.appearance': '界面',
         'guide.open': '流程指引',
         'guide.title': '连接 Outlook 的流程指引',
+        'guide.version': '插件版本',
         'guide.intro': '请用自己的 Microsoft 账号登录。若内置登录遇到 AADSTS65002，可按下面的步骤配置自己的 Entra 应用。',
         'guide.register': '注册 Entra 应用',
         'guide.registerHelp': '在 Microsoft Entra 管理中心打开「Entra ID → 应用注册 → 新注册」。个人邮箱请选择支持个人 Microsoft 账户的类型。注册后，在「概述」复制应用程序（客户端）ID。',
@@ -345,6 +346,7 @@ window.__ModuleLoader__.load({
         'tab.appearance': 'Interface',
         'guide.open': 'Setup guide',
         'guide.title': 'Connect Outlook',
+        'guide.version': 'Plugin version',
         'guide.intro': 'Sign in with your own Microsoft account. If the built-in sign-in returns AADSTS65002, follow these steps to configure your own Entra app.',
         'guide.register': 'Register an Entra app',
         'guide.registerHelp': 'In the Microsoft Entra admin center, go to Entra ID → App registrations → New registration. For a personal mailbox, choose an account type that supports personal Microsoft accounts. Copy the Application (client) ID from Overview.',
@@ -514,6 +516,9 @@ window.__ModuleLoader__.load({
       },
     }
 
+    let recentCalendarRange = null
+    let calendarRangeRevision = 0
+
     async function api(path, options) {
       const init = {
         method: options?.method ?? 'GET',
@@ -526,7 +531,16 @@ window.__ModuleLoader__.load({
         init.headers['content-type'] = 'application/json'
         init.body = JSON.stringify(options.body)
       }
+      const changesCalendar = init.method === 'POST' && /^\/calendar\/(create|update|delete)$/.test(path)
+      if (changesCalendar) {
+        recentCalendarRange = null
+        calendarRangeRevision += 1
+      }
       const res = await fetch(`/outlook/api${path}`, init)
+      if (changesCalendar) {
+        recentCalendarRange = null
+        calendarRangeRevision += 1
+      }
       let data = null
       try {
         data = await res.json()
@@ -1065,6 +1079,7 @@ window.__ModuleLoader__.load({
 .ob-calendar-events{display:flex;flex-direction:column;gap:2px;padding-top:2px;min-height:0;overflow:hidden}
 .ob-calendar-event{display:block;text-align:left;flex:none;margin:0 7px 0 0;max-width:100%;min-height:22px;line-height:20px;border:0;border-left:4px solid;border-radius:3px;padding:0 6px;font:inherit;font-size:11px;color:var(--dsw-alias-label-secondary);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
 .ob-calendar-event:hover{filter:brightness(.96)}
+.ob-calendar-event{border-left-color:var(--ob-event-color,var(--ob-blue));background:color-mix(in srgb,var(--ob-event-color,var(--ob-blue)) 24%,var(--ob-paper))}
 .ob-calendar-event[draggable=true]{cursor:grab}.ob-calendar-event[draggable=true]:active{cursor:grabbing}.ob-calendar-event.dragging{opacity:.38}.ob-calendar-event.drag-preview{opacity:.5;pointer-events:none;cursor:default}.ob-calendar-day.drag-over{background:color-mix(in srgb,var(--ob-blue) 10%,transparent)}.ob-calendar-day.drag-over .ob-calendar-events{min-height:24px}
 .ob-calendar-more{border:0;background:transparent;text-align:left;color:var(--ob-blue);font:inherit;font-size:11px;cursor:pointer;padding:1px 8px;flex:none}
 .ob-calendar-status{flex:none;padding:5px 12px;font-size:12px;border-top:1px solid var(--ob-line);color:var(--dsw-alias-label-secondary)}
@@ -1084,10 +1099,62 @@ window.__ModuleLoader__.load({
 .ob-event-titlebar{display:flex;align-items:center;justify-content:space-between;min-height:40px;padding:0 16px;font-size:13px;background:var(--ob-ground);flex:none}.ob-event-titlebar button{font-size:24px;border:0;background:transparent;color:inherit;cursor:pointer;width:32px;height:32px}.ob-event-titlebar button:hover{background:#e15b5b;color:white}
 .ob-event-toolbar{display:flex;align-items:center;gap:12px;min-height:42px;flex:none;margin:6px 14px 8px;padding:4px 8px;border:1px solid var(--ob-line);border-radius:8px;background:var(--ob-paper);box-shadow:0 1px 3px #0001;overflow-x:auto}.ob-event-toolbar-label{display:flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap}.ob-event-toolbar select{border:0;background:transparent;font:inherit;color:inherit;padding:4px;max-width:150px}
 .ob-event-layout{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(270px,1fr);gap:14px;padding:0 14px 14px;flex:1;min-height:0}.ob-event-left{display:flex;flex-direction:column;gap:8px;min-width:0;overflow:auto}.ob-event-fields{border:1px solid var(--ob-line);border-radius:6px;background:var(--ob-paper);padding:10px 14px;margin:0;min-width:0;flex:none}.ob-event-field{display:flex;gap:16px;align-items:flex-start;min-height:46px}.ob-event-field>svg{flex:none;margin:14px 0 0 4px;color:var(--dsw-alias-label-secondary,#555)}.ob-event-field-content{flex:1;min-width:0;border-bottom:1px solid #8887;padding:4px 0}.ob-event-field:last-child .ob-event-field-content{border:0}
-.ob-event-field-content>input:not([type=checkbox]),.ob-event-field-content>select{width:100%;height:37px;padding:4px 10px;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:13px;box-sizing:border-box}.ob-event-subject .ob-event-field-content{border-bottom:2px solid var(--ob-blue)}.ob-event-subject input{font-size:17px!important}.ob-event-fields input:focus,.ob-event-fields select:focus{outline:1px solid var(--ob-blue);outline-offset:-1px}.ob-event-dates{display:flex;flex-direction:column;gap:8px;padding:6px 4px 4px}.ob-event-date-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:8px}.ob-event-date-row>span{font-size:12px;color:var(--dsw-alias-label-secondary,#555);font-weight:600}.ob-event-date-inputs{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.ob-event-date-inputs input[type=date],.ob-event-date-inputs input[type=time]{height:32px;padding:0 8px;border:1px solid var(--ob-line,#ddd);border-radius:6px;background:var(--ob-paper,#fff);color:inherit;font:inherit;font-size:13px;min-width:0}.ob-event-date-inputs input[type=date]{width:148px}.ob-event-date-inputs input[type=time]{width:110px}.ob-event-duration{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0 0 48px}.ob-event-duration-label{font-size:11px;color:var(--dsw-alias-label-tertiary,#777);margin-right:2px}.ob-event-duration-btn{height:28px;padding:0 10px;border:1px solid var(--ob-line,#ddd);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary,#555);font:inherit;font-size:12px;cursor:pointer}.ob-event-duration-btn:hover:not(:disabled){background:color-mix(in srgb,var(--ob-blue) 6%,transparent);border-color:color-mix(in srgb,var(--ob-blue) 35%,var(--ob-line,#ddd))}.ob-event-duration-btn.on{background:color-mix(in srgb,var(--ob-blue) 14%,transparent);border-color:var(--ob-blue);color:var(--ob-blue);font-weight:600}.ob-event-duration-btn:disabled{opacity:.4;cursor:default}.ob-event-date-options{display:flex;align-items:center;gap:14px;padding:4px 0 2px 48px;font-size:11px;color:var(--dsw-alias-label-tertiary,#666)}.ob-event-date-options label{display:flex;align-items:center;gap:6px}.ob-event-fields input[type=checkbox]{accent-color:var(--ob-blue)}
+.ob-event-field-content>input:not([type=checkbox]),.ob-event-field-content>select{width:100%;height:37px;padding:4px 10px;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;font-size:13px;box-sizing:border-box}.ob-event-subject .ob-event-field-content{border-bottom:2px solid var(--ob-blue)}.ob-event-subject input{font-size:17px!important}.ob-event-fields input:focus,.ob-event-fields select:focus{outline:1px solid var(--ob-blue);outline-offset:-1px}.ob-event-dates{display:flex;flex-direction:column;gap:8px;padding:6px 4px 4px}.ob-event-date-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:8px}.ob-event-date-row>span{font-size:12px;color:var(--dsw-alias-label-secondary,#555);font-weight:600}.ob-event-date-inputs{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.ob-event-duration{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:2px 0 0 48px}.ob-event-duration-label{font-size:11px;color:var(--dsw-alias-label-tertiary,#777);margin-right:2px}.ob-event-duration-btn{height:28px;padding:0 10px;border:1px solid var(--ob-line,#ddd);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary,#555);font:inherit;font-size:12px;cursor:pointer}.ob-event-duration-btn:hover:not(:disabled){background:color-mix(in srgb,var(--ob-blue) 6%,transparent);border-color:color-mix(in srgb,var(--ob-blue) 35%,var(--ob-line,#ddd))}.ob-event-duration-btn.on{background:color-mix(in srgb,var(--ob-blue) 14%,transparent);border-color:var(--ob-blue);color:var(--ob-blue);font-weight:600}.ob-event-duration-btn:disabled{opacity:.4;cursor:default}.ob-event-date-options{display:flex;align-items:center;gap:14px;padding:4px 0 2px 48px;font-size:11px;color:var(--dsw-alias-label-tertiary,#666)}.ob-event-date-options label{display:flex;align-items:center;gap:6px}.ob-event-fields input[type=checkbox]{accent-color:var(--ob-blue)}
 .ob-event-body-card{display:flex;align-items:flex-start;gap:16px;padding:12px 14px;flex:1;min-height:160px;border:1px solid var(--ob-line);background:var(--ob-paper);border-radius:6px}.ob-event-body-card>svg{margin:10px 0 0 4px;flex:none;color:var(--dsw-alias-label-secondary,#555)}.ob-event-body-card textarea{align-self:stretch;flex:1;min-width:0;border:1px solid var(--ob-line);background:var(--ob-paper);color:inherit;border-radius:3px;resize:none;padding:12px;font:inherit;font-size:14px;line-height:1.7}
 .ob-event-schedule{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ob-line);border-radius:6px;background:var(--ob-paper);overflow:hidden}.ob-event-schedule-head{display:flex;align-items:center;gap:8px;padding:10px 8px;min-height:48px;border-bottom:1px solid var(--ob-line);flex:none}.ob-event-schedule-head strong{font-size:13px}.ob-event-schedule-head button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:20px;padding:0 4px}.ob-event-timeline-status{min-height:24px;padding:4px 8px;border-bottom:1px solid var(--ob-line);font-size:10px;color:var(--dsw-alias-label-tertiary,#777);flex:none}.ob-event-timeline-scroll{overflow:auto;flex:1;min-height:0;scrollbar-width:thin}.ob-event-timeline{height:1152px;position:relative;margin-right:12px}.ob-event-hour{display:block;position:relative;width:100%;height:48px;border:0;border-bottom:1px solid var(--ob-line);background:transparent;text-align:left;padding:0;color:var(--dsw-alias-label-tertiary,#666);font-size:11px;cursor:pointer}.ob-event-hour:after{content:"";position:absolute;left:44px;right:0;top:24px;border-top:1px dashed var(--ob-line)}.ob-event-hour span{display:block;width:43px;border-right:1px solid var(--ob-line);height:100%;padding:4px 0 0 17px;box-sizing:border-box}.ob-event-hour:hover{background:color-mix(in srgb,var(--ob-blue) 5%,transparent)}
-.ob-event-existing,.ob-event-draft-block,.ob-event-drag-ghost{position:absolute;left:44px;right:0;padding:3px 8px;box-sizing:border-box;border-left:4px solid;border-radius:3px;overflow:hidden;font-size:11px}.ob-event-existing{background:color-mix(in srgb,var(--ob-blue) 12%,var(--ob-paper));opacity:.8;right:40%;color:inherit;pointer-events:none}.ob-event-existing.interactive{pointer-events:auto;cursor:grab;touch-action:none}.ob-event-existing.interactive:active,.ob-event-draft-block:active{cursor:grabbing}.ob-event-existing.drag-origin{opacity:.32}.ob-event-draft-block{left:55%;z-index:2;background:#48c274;color:#0b2616;border-left-color:#249a4e;box-shadow:0 3px 8px #0002;display:flex;flex-direction:column;gap:3px;pointer-events:auto;cursor:grab;touch-action:none}.ob-event-draft-block.dragging{opacity:.9;z-index:5;box-shadow:0 6px 14px #0003}.ob-event-draft-block strong{font-size:12px;white-space:nowrap}.ob-event-draft-block span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ob-event-drag-ghost{z-index:4;pointer-events:none;opacity:.5;display:flex;flex-direction:column;gap:3px;box-shadow:0 4px 10px #0002}.ob-event-drag-ghost.draft{left:55%;background:#48c274;color:#0b2616;border-left-color:#249a4e}.ob-event-drag-ghost.existing{right:40%;background:color-mix(in srgb,var(--ob-blue) 18%,var(--ob-paper));border-left-color:var(--ob-blue)}.ob-event-hour.slot-hot{background:color-mix(in srgb,var(--ob-blue) 8%,transparent)}
+.ob-event-existing,.ob-event-draft-block,.ob-event-drag-ghost{position:absolute;left:0;right:0;padding:3px 8px;box-sizing:border-box;border-left:4px solid;border-radius:3px;overflow:hidden;font-size:11px}.ob-event-existing{opacity:.8;color:inherit;pointer-events:none}.ob-event-existing.interactive{pointer-events:auto;cursor:grab;touch-action:none}.ob-event-existing.interactive:active,.ob-event-draft-block:active{cursor:grabbing}.ob-event-existing.drag-origin{opacity:.32}.ob-event-draft-block{z-index:2;background:#48c274;color:#0b2616;border-left-color:#249a4e;box-shadow:0 3px 8px #0002;display:flex;flex-direction:column;gap:3px;pointer-events:auto;cursor:grab;touch-action:none}.ob-event-draft-block.dragging{opacity:.9;z-index:5;box-shadow:0 6px 14px #0003}.ob-event-draft-block strong{font-size:12px;white-space:nowrap}.ob-event-draft-block span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ob-event-drag-ghost{z-index:4;pointer-events:none;opacity:.5;display:flex;flex-direction:column;gap:3px;box-shadow:0 4px 10px #0002}.ob-event-drag-ghost.draft{background:#48c274;color:#0b2616;border-left-color:#249a4e}.ob-event-hour.slot-hot{background:color-mix(in srgb,var(--ob-blue) 8%,transparent)}
+.ob-event-existing.resizing{opacity:1;z-index:3}
+.ob-guide-version{margin-inline-start:10px;white-space:nowrap;font-size:11px;font-weight:400;color:var(--dsw-alias-label-secondary,#666)}
+.ob-plan-panel .ob-plan-empty{opacity:.55;user-select:none;-webkit-user-select:none;cursor:default}
+.ob-plan-heading-details .ob-plan-summary,.ob-plan-heading-details .ob-plan-drag-hint{opacity:.55}
+.ob-todo-page,.ob-plan-quick-add-layer{-webkit-user-select:none;user-select:none}
+.ob-todo-page input,.ob-todo-page textarea,.ob-plan-quick-add textarea{-webkit-user-select:text;user-select:text}
+.ob-plan-quick-add-layer{position:fixed;inset:0;z-index:1250}
+.ob-plan-quick-add{position:absolute;width:min(310px,calc(100vw - 16px));box-sizing:border-box;border:1px solid var(--ob-line,#ddd);border-radius:10px;background:var(--ob-paper,#fff);color:var(--dsw-alias-label-primary,#242424);box-shadow:0 6px 22px #0003;font:14px/1.4 "Segoe UI","Microsoft YaHei",sans-serif}
+.ob-plan-quick-add textarea{display:block;box-sizing:border-box;width:100%;height:46px;min-height:46px;padding:13px 16px;border:0;border-radius:inherit;background:transparent;color:inherit;font:inherit;outline:none;resize:none;white-space:pre-wrap;overflow-wrap:anywhere}
+.ob-plan-quick-add:focus-within{border-color:var(--ob-blue,#0f6cbd)}
+.ob-plan-quick-add textarea::placeholder{color:currentColor;opacity:.55;user-select:none;-webkit-user-select:none}
+.ob-reading-heading{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px}.ob-reading-heading .ob-reading-title{flex:1;min-width:0;margin:0}.ob-reading-heading .ob-btn{flex:none;white-space:nowrap}
+.ob-event-schedule-head strong{white-space:nowrap}.ob-event-schedule-head .ob-event-timeline-status{margin-left:auto;min-height:0;min-width:0;flex:1;padding:0;border:0;text-align:right;line-height:1.4;overflow-wrap:anywhere}
+.ob-event-calendar-field .ob-event-field-content{border-bottom:0}.ob-event-calendar-field .ob-event-field-content>select{border:1px solid var(--ob-line,#ccc);border-radius:5px;background:var(--ob-paper,#fff);padding:4px 10px;cursor:pointer}.ob-event-calendar-field .ob-event-field-content>select:focus{border-color:var(--ob-blue);outline:1px solid var(--ob-blue);outline-offset:0}
+.ob-day-peek-item{background:color-mix(in srgb,var(--ob-event-color,#0f6cbd) 24%,var(--ob-paper,#fff));color:inherit}.ob-day-peek-item:hover{background:color-mix(in srgb,var(--ob-event-color,#0f6cbd) 32%,var(--ob-paper,#fff))}
+.ob-event-confirm-mask{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;background:#0005;padding:20px}.ob-event-confirm-dialog{width:min(420px,100%);box-sizing:border-box;padding:24px;border:1px solid var(--ob-line,#ddd);border-radius:12px;background:var(--ob-paper,#fff);color:var(--dsw-alias-label-primary,#242424);box-shadow:0 14px 50px #0004;font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif}.ob-event-confirm-dialog strong{font-size:18px}.ob-event-confirm-dialog p{margin:12px 0 20px}.ob-event-confirm-actions{display:flex;justify-content:flex-end;gap:8px}
+.ob-event-close-notice{margin:8px 0 0 auto;width:min(100%,360px);box-sizing:border-box;padding:12px 14px;border:1px solid #f0df9d;border-radius:6px;background:#fff3cd;color:#665010;font-size:12px;line-height:1.6;white-space:normal}.ob-event-close-notice.failed{background:#fce8e8;border-color:#edb5b5;color:#a4262c}
+.ob-event-existing.interactive,.ob-event-draft-block,.ob-event-resize-handle{user-select:none;-webkit-user-select:none}
+.ob-event-block-track{position:absolute;inset:0 0 0 44px;pointer-events:none}
+.ob-event-draft-block,.ob-event-drag-ghost.draft{border-left-color:var(--ob-event-color,#0f6cbd);background:color-mix(in srgb,var(--ob-event-color,#0f6cbd) 24%,var(--ob-paper,#fff));color:var(--dsw-alias-label-primary,#222)}
+.ob-event-existing,.ob-event-drag-ghost.existing{border-left-color:var(--ob-event-color,#0f6cbd);background:color-mix(in srgb,var(--ob-event-color,#0f6cbd) 12%,var(--ob-paper,#fff))}
+.ob-event-drag-ghost.existing{background:color-mix(in srgb,var(--ob-event-color,#0f6cbd) 18%,var(--ob-paper,#fff))}
+.ob-event-agenda-stack{align-self:stretch;display:flex;flex:1;flex-direction:column;gap:8px;min-width:0;padding:8px;border:1px solid var(--ob-line);border-radius:3px;background:var(--ob-paper);box-sizing:border-box}
+.ob-event-agenda-stack:focus-within{border-color:var(--ob-blue)}
+.ob-event-agenda-stack textarea{min-height:90px;border:0;border-radius:0;padding:6px 4px;outline:none}
+.ob-event-agenda-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ob-event-agenda-panel{display:grid;gap:6px;padding:9px;border:1px solid var(--ob-line);border-radius:6px;background:var(--ob-ground)}
+.ob-event-agenda-hint{margin:6px 0 0;font-size:11px;color:var(--dsw-alias-label-secondary,#555)}
+.ob-event-agenda-panel .ob-ai-output{max-height:180px;overflow:auto}
+.ob-event-date-picker{position:relative;display:inline-flex;align-items:center;gap:5px;height:34px;padding:3px 4px;border:1px solid var(--ob-line,#ddd);border-radius:8px;background:var(--ob-paper,#fff);box-sizing:border-box;font-size:13px;user-select:none;-webkit-user-select:none}
+.ob-event-date-picker button,.ob-event-date-picker .ob-date-segment{height:26px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;text-align:center}
+.ob-event-date-picker button{cursor:pointer}
+.ob-event-date-picker>.ob-date-year,.ob-event-date-picker .ob-date-segment,.ob-event-date-picker>.ob-date-calendar{border:1px solid var(--ob-line,#ddd);border-radius:6px;background:var(--ob-paper,#fff);box-sizing:border-box}
+.ob-event-date-picker button:hover,.ob-event-date-picker .ob-date-segment:focus{background:color-mix(in srgb,var(--ob-blue) 8%,transparent)}
+.ob-event-date-picker .ob-date-segment-wrap{position:relative;display:inline-flex}
+.ob-event-date-picker .ob-date-segment{width:43px;padding:0 17px 0 4px;user-select:none;-webkit-user-select:none}
+.ob-event-date-picker .ob-date-unit{font-size:11px;opacity:.55;user-select:none;-webkit-user-select:none;pointer-events:none}
+.ob-event-date-picker .ob-date-segment-wrap>.ob-date-unit{position:absolute;right:5px;top:50%;transform:translateY(-50%)}
+.ob-event-date-picker .ob-date-segment::placeholder{color:inherit;opacity:.55}
+.ob-event-date-picker .ob-date-segment[data-wheel-value]::placeholder{opacity:1}
+.ob-event-date-picker .ob-date-segment::selection{color:inherit;background:transparent}
+.ob-event-date-picker .ob-date-year{display:inline-flex;align-items:center;justify-content:center;gap:3px;width:58px}
+.ob-event-date-picker .ob-date-calendar{display:grid;place-items:center;width:30px}
+.ob-event-date-picker .ob-date-native{position:absolute;right:0;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+.ob-date-year-wheel{position:absolute;z-index:8;top:calc(100% + 4px);left:0;width:76px;height:142px;padding:56px 4px;box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;border:1px solid var(--ob-line,#ddd);border-radius:6px;background:var(--ob-paper,#fff);box-shadow:0 4px 12px #0002}
+.ob-date-year-wheel .ob-date-year-option{display:block;width:100%;height:28px;scroll-snap-align:center;color:var(--dsw-alias-label-secondary,#555)}
+.ob-date-year-wheel .ob-date-year-option[aria-selected=true]{background:color-mix(in srgb,var(--ob-blue) 13%,transparent);color:var(--ob-blue);font-weight:600}
+.ob-event-resize-handle{appearance:none;position:absolute;z-index:1;left:0;right:0;width:100%;height:min(7px,50%);margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;cursor:ns-resize;touch-action:none}
+.ob-event-resize-handle.start{top:0}.ob-event-resize-handle.end{bottom:0}
+.ob-event-resize-handle::after{content:"";display:block;margin:auto;width:22px;height:2px;border-radius:2px;background:currentColor;opacity:.45}
+.ob-event-resize-handle:hover,.ob-event-resize-handle:focus-visible{background:color-mix(in srgb,currentColor 12%,transparent)}
+.ob-event-resize-handle:focus-visible{outline:1px solid currentColor;outline-offset:-1px}
 .ob-event-error,.ob-event-discard{margin:0 14px 8px;padding:8px 12px;border-radius:4px;background:#d1343810;color:var(--dsw-alias-state-error-primary,#a4262c);font-size:12px;flex:none}.ob-event-discard{display:flex;align-items:center;gap:12px;background:#fff3cd;color:#665010}.ob-event-discard button{cursor:pointer;padding:4px 10px}.ob-event-error-text{font-size:11px;color:#b42318;padding:4px 8px}.ob-event-editor button:focus-visible{outline:2px solid var(--ob-blue)}
 @media(max-width:850px){.ob-event-layout{grid-template-columns:minmax(0,1fr) 260px;gap:8px;padding:0 8px 8px}.ob-event-field{gap:8px}.ob-event-fields{padding:8px}.ob-event-date-row{grid-template-columns:36px minmax(0,1fr)}.ob-event-duration{padding-left:36px}.ob-event-date-options{padding-left:36px}.ob-event-toolbar{margin:4px 8px 8px;gap:6px}}
 @media(max-width:650px){.ob-event-layout{display:flex;flex-direction:column;overflow:auto}.ob-event-left{flex:none;overflow:visible}.ob-event-schedule{min-height:320px;flex:none}.ob-event-mask{padding:4px}.ob-event-body-card{min-height:170px}}
@@ -1225,7 +1292,7 @@ window.__ModuleLoader__.load({
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false,
+        hourCycle: 'h23',
         weekday: 'short',
       })
       return Object.fromEntries(fmt.formatToParts(base).filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]))
@@ -1236,6 +1303,42 @@ window.__ModuleLoader__.load({
       date.setTime(date.getTime() + days * 86400000)
       const parts = shanghaiTodayParts(date)
       return `${parts.year}-${parts.month}-${parts.day}`
+    }
+
+    const EVENT_DURATION_MS = 30 * 60_000
+    const EVENT_BUFFER_MS = 15 * 60_000
+
+    function calendarTimestamp(stamp) {
+      return new Date(/(?:Z|[+-]\d{2}:\d{2})$/i.test(stamp || '')
+        ? stamp
+        : `${String(stamp || '').slice(0, 19)}+08:00`).getTime()
+    }
+
+    function eventSlotFields(start) {
+      const fieldsAt = (instant) => {
+        const { year, month, day, hour, minute } = shanghaiTodayParts(new Date(instant))
+        return { date: `${year}-${month}-${day}`, time: `${hour}:${minute}` }
+      }
+      const from = fieldsAt(start)
+      const to = fieldsAt(start + EVENT_DURATION_MS)
+      return { date: from.date, startTime: from.time, endDate: to.date, endTime: to.time }
+    }
+
+    function nextEventSlot(start, events) {
+      const intervals = events.filter((event) => !event.allDay)
+        .map((event) => ({ start: calendarTimestamp(event.start), end: calendarTimestamp(event.end) }))
+        .filter((event) => event.end > event.start)
+        .sort((a, b) => a.start - b.start)
+      for (const event of intervals) {
+        if (event.start >= start + EVENT_DURATION_MS) break
+        if (event.end > start) start = Math.ceil((event.end + EVENT_BUFFER_MS) / 60_000) * 60_000
+      }
+      return start
+    }
+
+    function fetchTimelineDay(from) {
+      const to = new Date(from.getTime() + 86400000)
+      return api(`/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
     }
 
     function addMinutesHm(hm, minutes) {
@@ -1427,20 +1530,326 @@ window.__ModuleLoader__.load({
           h('button', { type: 'button', onClick: () => setFailure(''), 'aria-label': '关闭提示' }, '×')) : null)
     }
 
-    function EventEditor({ form, setForm, calendars, saving, error, onSave, onDelete, onClose }) {
+    function eventMonthLength(year, month) {
+      const end = new Date(0)
+      end.setUTCFullYear(year, month, 0)
+      return end.getUTCDate()
+    }
+
+    function eventUnitLabel(unit) {
+      return h('span', { className: 'ob-date-unit', 'aria-hidden': true }, unit)
+    }
+
+    function EventNumberSegment({ label, unit, value, min, max, wheelMin = min, wheelMax = max, onInteract, onChange }) {
+      const [editing, setEditing] = React.useState(null)
+      const inputRef = React.useRef(null)
+      const cancelInput = React.useRef(false)
+      React.useEffect(() => {
+        const input = inputRef.current
+        if (!input) return
+        const onWheel = (event) => {
+          if (input.ownerDocument.activeElement !== input || event.ctrlKey ||
+            Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+          event.preventDefault()
+          const direction = Math.sign(event.deltaY)
+          setEditing((current) => {
+            const draft = current?.text || current?.wheelValue
+            const next = Math.max(wheelMin, Math.min(wheelMax, Number(draft ?? value) + direction))
+            return { text: '', wheelValue: next }
+          })
+        }
+        input.addEventListener('wheel', onWheel, { passive: false })
+        return () => input.removeEventListener('wheel', onWheel)
+      }, [value, wheelMin, wheelMax])
+
+      const wheelValue = editing?.wheelValue
+      return h('span', { className: 'ob-date-segment-wrap' }, h('input', {
+        ref: inputRef, className: 'ob-date-segment', type: 'text', inputMode: 'numeric', autoComplete: 'off',
+        'aria-label': label, 'data-wheel-value': wheelValue,
+        value: editing?.text ?? pad(value), placeholder: pad(wheelValue ?? value),
+        onFocus: () => { onInteract(); setEditing({ text: '' }) },
+        onChange: (event) => setEditing({ text: event.target.value.replace(/\D/g, '').slice(0, 2) }),
+        onSelect: (event) => {
+          const input = event.currentTarget
+          if (input.selectionStart !== input.selectionEnd) input.setSelectionRange(input.selectionEnd, input.selectionEnd)
+        },
+        onBlur: (event) => {
+          const entered = Number(event.currentTarget.value || wheelValue)
+          setEditing(null)
+          if (cancelInput.current) { cancelInput.current = false; return }
+          if (entered >= min && entered <= max && entered !== value) onChange(entered)
+        },
+        onKeyDown: (event) => {
+          if (event.key !== 'Enter' && event.key !== 'Escape') return
+          event.preventDefault()
+          event.stopPropagation()
+          cancelInput.current = event.key === 'Escape'
+          event.currentTarget.blur()
+        },
+      }), eventUnitLabel(unit))
+    }
+
+    function EventNativePicker({ type, label, value, min, onOpen, onChange }) {
+      const picker = React.useRef(null)
+      return h(React.Fragment, null,
+        h('button', {
+          className: 'ob-date-calendar', type: 'button', 'aria-label': label,
+          onClick: () => { onOpen(); picker.current?.showPicker?.() },
+        }, h(MailIcon, { name: type === 'date' ? 'calendar' : 'clock', size: 14 })),
+        h('input', {
+          className: 'ob-date-native', type, ref: picker, value, min, tabIndex: -1, 'aria-hidden': true,
+          onChange: (event) => {
+            const next = event.target.value
+            if (next && next !== value && (!min || next >= min)) onChange(next)
+          },
+        }))
+    }
+
+    function EventDatePicker({ label, value, min, onChange, onInteract }) {
+      const [year, month, day] = value.split('-').map(Number)
+      const [wheelYear, setWheelYear] = React.useState(null)
+      const [highlightedYear, setHighlightedYear] = React.useState(year)
+      const wheel = React.useRef(null)
+      const yearButton = React.useRef(null)
+      const [earliestYear, earliestMonth, earliestDay] = (min || '').split('-').map(Number)
+      const rowHeight = 28
+      const minYear = Math.max(min ? Number(min.slice(0, 4)) : 1, wheelYear - 100)
+      const maxYear = Math.min(9999, wheelYear + 100)
+      const wheelId = `ob-event-${min ? 'end' : 'start'}-year-wheel`
+      React.useEffect(() => {
+        if (wheelYear == null || !wheel.current) return
+        wheel.current.scrollTop = (wheelYear - minYear) * rowHeight
+        wheel.current.focus({ preventScroll: true })
+      }, [wheelYear, minYear])
+
+      const apply = (nextYear, nextMonth, nextDay) => {
+        const date = `${String(nextYear).padStart(4, '0')}-${pad(nextMonth)}-${pad(Math.min(nextDay, eventMonthLength(nextYear, nextMonth)))}`
+        const next = min && date < min ? min : date
+        if (next !== value) onChange(next)
+      }
+      const closeWheel = () => {
+        setWheelYear(null)
+        yearButton.current?.focus()
+      }
+      const chooseYear = (nextYear) => {
+        apply(nextYear, month, day)
+        closeWheel()
+      }
+      const readWheelYear = (node) => Math.max(minYear, Math.min(maxYear, minYear + Math.round(node.scrollTop / rowHeight)))
+      const onWheelKey = (event) => {
+        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          event.stopPropagation()
+          if (event.key === 'Escape') closeWheel()
+          else chooseYear(readWheelYear(event.currentTarget))
+          return
+        }
+        const step = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[event.key]
+        if (!step) return
+        event.preventDefault()
+        const next = Math.max(minYear, Math.min(maxYear, readWheelYear(event.currentTarget) + step))
+        event.currentTarget.scrollTop = (next - minYear) * rowHeight
+        setHighlightedYear(next)
+      }
+      const interactWithDate = () => {
+        onInteract()
+        setWheelYear(null)
+      }
+      return h('div', {
+        className: 'ob-event-date-picker', role: 'group', 'aria-label': `${label}日期`,
+        onBlur: (event) => { if (!event.currentTarget.contains(event.relatedTarget)) setWheelYear(null) },
+      },
+        h('button', {
+          ref: yearButton, className: 'ob-date-year', type: 'button', title: '滚动选择年份',
+          'aria-label': `${label}年份 ${year}`, 'aria-haspopup': 'listbox', 'aria-expanded': wheelYear != null,
+          'aria-controls': wheelYear != null ? wheelId : undefined,
+          onClick: () => {
+            if (wheelYear != null) { closeWheel(); return }
+            onInteract()
+            setHighlightedYear(year)
+            setWheelYear(year)
+          },
+        }, String(year).padStart(4, '0'), eventUnitLabel('年')),
+        h(EventNumberSegment, {
+          label: `${label}月份`, unit: '月', value: month, min: 1, max: 12,
+          wheelMin: earliestYear === year ? earliestMonth : 1,
+          onInteract: interactWithDate, onChange: (next) => apply(year, next, day),
+        }),
+        h(EventNumberSegment, {
+          label: `${label}日期中的日`, unit: '日', value: day, min: 1, max: 31,
+          wheelMin: earliestYear === year && earliestMonth === month ? earliestDay : 1,
+          wheelMax: eventMonthLength(year, month),
+          onInteract: interactWithDate, onChange: (next) => apply(year, month, next),
+        }),
+        h(EventNativePicker, { type: 'date', label: `打开${label}日期日历`, value, min, onOpen: interactWithDate, onChange }),
+        wheelYear != null ? h('div', {
+          ref: wheel, className: 'ob-date-year-wheel', id: wheelId, role: 'listbox', tabIndex: 0,
+          'aria-label': `${label}年份`, 'aria-activedescendant': `${wheelId}-${highlightedYear}`,
+          onScroll: (event) => setHighlightedYear(readWheelYear(event.currentTarget)),
+          onKeyDown: onWheelKey,
+        }, Array.from({ length: maxYear - minYear + 1 }, (_, index) => {
+          const option = minYear + index
+          return h('button', {
+            className: 'ob-date-year-option', type: 'button', key: option, id: `${wheelId}-${option}`,
+            tabIndex: -1, role: 'option', 'aria-selected': option === highlightedYear,
+            onMouseDown: (event) => event.preventDefault(),
+            onClick: () => chooseYear(option),
+          }, String(option).padStart(4, '0'))
+        })) : null)
+    }
+
+    function EventTimePicker({ label, value, onChange, onInteract }) {
+      const [hour, minute] = value.split(':').map(Number)
+      return h('div', { className: 'ob-event-date-picker', role: 'group', 'aria-label': `${label}时间` },
+        h(EventNumberSegment, {
+          label: `${label}小时`, unit: '时', value: hour, min: 0, max: 23, onInteract,
+          onChange: (next) => onChange(`${pad(next)}:${pad(minute)}`),
+        }),
+        h(EventNumberSegment, {
+          label: `${label}分钟`, unit: '分', value: minute, min: 0, max: 59, onInteract,
+          onChange: (next) => onChange(`${pad(hour)}:${pad(next)}`),
+        }),
+        h(EventNativePicker, { type: 'time', label: `打开${label}时间选择器`, value, onOpen: onInteract, onChange }))
+    }
+
+    function EventAgendaEditor({ subject, body, durationMinutes, saving, patch }) {
+      const [instruction, setInstruction] = React.useState('')
+      const [draft, setDraft] = React.useState(null)
+      const [busy, setBusy] = React.useState(false)
+      const [error, setError] = React.useState('')
+      const request = React.useRef(null)
+      const cancel = () => {
+        const pending = request.current
+        request.current = null
+        pending?.abort()
+      }
+      React.useEffect(() => cancel, [])
+      const cancelGeneration = () => {
+        cancel()
+        setBusy(false)
+      }
+      const canGenerate = !saving && !busy && Boolean(instruction.trim() || subject.trim() || body.trim())
+      const generate = async () => {
+        if (!canGenerate || request.current) return
+        const controller = new AbortController()
+        request.current = controller
+        setBusy(true)
+        setError('')
+        setDraft(null)
+        try {
+          const result = await api('/calendar/ai/draft', {
+            method: 'POST',
+            signal: controller.signal,
+            body: { instruction, subject, body: body.slice(0, 6000), durationMinutes },
+          })
+          if (request.current === controller) setDraft(result)
+        } catch (failure) {
+          if (request.current === controller) setError(failure.message)
+        } finally {
+          if (request.current === controller) {
+            request.current = null
+            setBusy(false)
+          }
+        }
+      }
+      const applyDraft = (includeTitle) => {
+        if (!draft || saving || busy) return
+        patch(includeTitle ? { subject: draft.subject, body: draft.body } : { body: draft.body })
+        setDraft(null)
+      }
+      return h('div', { className: 'ob-event-agenda-stack' },
+        h('div', { className: 'ob-ai-bar', role: 'group', 'aria-label': 'AI 帮写日程和议程' },
+            h('span', { className: 'ob-ai-bar-mark', 'aria-hidden': true }, 'AI'),
+            h('input', {
+              className: 'ob-ai-bar-input',
+              value: instruction, maxLength: 2000, disabled: busy || saving,
+              'aria-label': '活动要点',
+              placeholder: '试试：项目周会，回顾进度、讨论风险、确认下周分工',
+              title: '参考活动要点、当前标题、说明和时长生成草稿',
+              onChange: (event) => setInstruction(event.target.value),
+              onKeyDown: (event) => {
+                if (event.key !== 'Enter' || event.nativeEvent?.isComposing) return
+                event.preventDefault()
+                void generate()
+              },
+            }),
+            h('button', { type: 'button', className: 'ob-ai-bar-send', disabled: !canGenerate, onClick: generate }, busy ? '生成中…' : '生成草稿')),
+          busy ? h('button', { type: 'button', className: 'ob-btn', onClick: cancelGeneration }, '取消生成') : null,
+          busy ? h('p', { className: 'ob-event-agenda-hint', role: 'status' }, '正在起草标题和议程…') : null,
+          error ? h('div', { className: 'ob-inline-error', role: 'alert' }, error) : null,
+          draft ? h('div', { className: 'ob-event-agenda-panel' },
+            h('strong', null, draft.subject),
+            h('div', { className: 'ob-ai-output' }, draft.body),
+            h('div', { className: 'ob-event-agenda-actions' },
+              h('button', { type: 'button', className: 'ob-btn', disabled: saving, onClick: () => applyDraft(true) }, '采用标题和议程'),
+              h('button', { type: 'button', className: 'ob-btn', disabled: saving, onClick: () => applyDraft(false) }, '仅采用议程')),
+            subject.trim() || body.trim()
+              ? h('p', { className: 'ob-event-agenda-hint' }, '采用草稿会替换对应字段。') : null) : null,
+        h('textarea', { disabled: saving, 'aria-label': '活动说明', placeholder: '添加说明或议程…',
+          value: body, onChange: (event) => patch({ body: event.target.value }) }))
+    }
+
+    function EventEditor({ form, setForm, calendars, saving, error, onSave, onDelete, onDeleteTimelineEvent, onClose, onTimelineChange, autoTime, defaultCalendarAction }) {
       const timeline = React.useRef(null)
       const dialog = React.useRef(null)
       const [timelineData, setTimelineData] = React.useState([])
       const [timelineStatus, setTimelineStatus] = React.useState('')
-      const [discarding, setDiscarding] = React.useState(false)
-      const initial = React.useRef(JSON.stringify(form))
+      const [closeError, setCloseError] = React.useState('')
+      const [manualEdited, setManualEdited] = React.useState(false)
+      const [confirmClose, setConfirmClose] = React.useState(false)
+      const initial = React.useRef(form)
+      const autoTimePending = React.useRef(autoTime)
+      const [checkingTime, setCheckingTime] = React.useState(Boolean(autoTime))
       const writable = calendars.filter((calendar) => calendar.canEdit !== false)
-      const patch = (values) => setForm((old) => ({ ...old, ...values }))
-      const close = () => { if (!saving) { if (JSON.stringify(form) !== initial.current) setDiscarding(true); else onClose() } }
+      const sourceCalendar = form.eventId
+        ? calendars.find((calendar) => calendar.id === form.sourceCalendarId) || form.sourceCalendar
+        : null
+      const selectedCalendar = calendars.find((calendar) => calendar.id === form.calendarId) ||
+        (sourceCalendar?.id === form.calendarId ? sourceCalendar : null)
+      const readOnly = sourceCalendar?.canEdit === false
+      const editorTitle = readOnly ? '查看日程' : form.eventId ? '编辑日程' : '新建活动'
+      const calendarOptions = readOnly ? [] : writable
+      const includeSelected = !calendarOptions.some((calendar) => calendar.id === form.calendarId)
+      const movingCalendar = Boolean(form.eventId && form.sourceCalendarId !== form.calendarId)
+      const calendarColor = selectedCalendar?.color || '#0f6cbd'
+      const timelineEventColor = (item) => calendars.find((calendar) => calendar.id === item.calendarId)?.color || item.color || '#0f6cbd'
+      const stopAutoTime = () => {
+        if (!autoTimePending.current) return
+        autoTimePending.current = false
+        setCheckingTime(false)
+      }
+      const patch = (values, fromTimeline = false) => {
+        if (!fromTimeline) setManualEdited(true)
+        setConfirmClose(false)
+        setCloseError('')
+        if (['date', 'endDate', 'startTime', 'endTime', 'allDay'].some((key) => key in values)) stopAutoTime()
+        setForm((old) => ({ ...old, ...values }))
+      }
+      const editableValues = (value) => {
+        const { timelineChanges, timelineSaved, ...fields } = value
+        return JSON.stringify(fields)
+      }
+      const currentChanged = editableValues(form) !== editableValues(initial.current)
+      const pendingTimeline = Object.keys(form.timelineChanges || {}).length > 0
+      const close = () => {
+        if (saving) return
+        if (!currentChanged && !pendingTimeline) { onClose(); return }
+        if (!form.eventId || manualEdited) { setConfirmClose(true); return }
+        const saveCurrent = currentChanged
+        if (saveCurrent && !canSave) {
+          setCloseError('暂时无法保存，请检查标题、起止时间和所属日历后再关闭。')
+          return
+        }
+        setCloseError('')
+        void onSave({ saveCurrent })
+      }
+      const scrollToStart = (time) => {
+        if (timeline.current) timeline.current.scrollTop = Math.max(0, (Number(time.slice(0,2)) - 2) * 48)
+      }
       React.useEffect(() => {
         const old = document.activeElement
-        dialog.current?.querySelector('input[name=subject]')?.focus()
-        if (timeline.current) timeline.current.scrollTop = Math.max(0, (Number(form.startTime.slice(0,2)) - 2) * 48)
+        dialog.current?.querySelector(readOnly ? 'button' : 'input[name=subject]')?.focus()
+        scrollToStart(form.startTime)
         return () => old?.focus?.()
       }, [])
       React.useEffect(() => {
@@ -1449,16 +1858,45 @@ window.__ModuleLoader__.load({
         if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) { setTimelineStatus('请选择日期'); return }
         setTimelineStatus('正在加载当天日程…')
         const from = new Date(`${form.date}T00:00:00+08:00`)
-        const to = new Date(from.getTime() + 86400000)
-        api(`/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
-          .then((data) => { if (alive) { setTimelineData(data.events ?? []); setTimelineStatus(data.warnings?.join('；') || '') } })
-          .catch((failure) => { if (alive) setTimelineStatus(`当天日程加载失败：${failure.message}`) })
+        fetchTimelineDay(from)
+          .then(async (data) => {
+            if (!alive) return
+            setTimelineData(data.events ?? [])
+            const warnings = [...(data.warnings ?? [])]
+            setTimelineStatus(warnings.join('；'))
+            if (!autoTimePending.current) return
+
+            let start = nextEventSlot(calendarTimestamp(`${form.date}T${form.startTime}:00`), data.events ?? [])
+            let checkedUntil = from.getTime() + 86400000
+            for (let day = 0; day < 6 && start + EVENT_DURATION_MS > checkedUntil; day += 1) {
+              const slotDay = calendarTimestamp(`${eventSlotFields(start).date}T00:00:00`)
+              const nextFrom = Math.max(checkedUntil, slotDay)
+              const nextDay = await fetchTimelineDay(new Date(nextFrom))
+              if (!alive || !autoTimePending.current) return
+              warnings.push(...(nextDay.warnings ?? []))
+              start = nextEventSlot(start, nextDay.events ?? [])
+              checkedUntil = nextFrom + 86400000
+            }
+            if (start + EVENT_DURATION_MS > checkedUntil) throw new Error('暂未找到空闲时段，请手动选择时间')
+            const slot = eventSlotFields(start)
+            initial.current = { ...initial.current, ...slot }
+            setForm((old) => ({ ...old, ...slot }))
+            scrollToStart(slot.startTime)
+            stopAutoTime()
+            setTimelineStatus([...new Set(warnings)].join('；'))
+          })
+          .catch((failure) => {
+            if (!alive) return
+            setTimelineStatus(`${autoTimePending.current ? '自动选时失败' : '当天日程加载失败'}：${failure.message}`)
+            stopAutoTime()
+          })
         return () => { alive = false }
       }, [form.date])
       const keyboard = (event) => {
         if (event.key === 'Escape') { event.preventDefault(); close() }
         if (event.key !== 'Tab') return
-        const focusable = Array.from(dialog.current.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]'))
+        const focusable = Array.from(dialog.current.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]'))
+          .filter((element) => element.tabIndex >= 0)
         const first = focusable[0], last = focusable[focusable.length - 1]
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
         if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
@@ -1466,6 +1904,8 @@ window.__ModuleLoader__.load({
       const start = new Date(`${form.date}T${form.allDay ? '00:00' : form.startTime}:00+08:00`)
       const end = new Date(`${form.endDate}T${form.allDay ? '23:59' : form.endTime}:00+08:00`)
       const validRange = Number.isFinite(+start) && Number.isFinite(+end) && end > start
+      const canSave = !saving && !readOnly && !checkingTime && validRange && Boolean(form.subject.trim()) &&
+        Boolean(selectedCalendar && selectedCalendar.canEdit !== false)
       const mins = (value) => { const [hour, minute] = value.split(':').map(Number); return hour*60+minute }
       const startMinute = form.allDay ? 0 : mins(form.startTime)
       const endMinute = form.allDay || form.endDate > form.date ? 1440 : mins(form.endTime)
@@ -1481,14 +1921,16 @@ window.__ModuleLoader__.load({
       const SNAP_MIN = 15
       const [timelineDrag, setTimelineDrag] = React.useState(null)
       const timelineDragRef = React.useRef(null)
+      const timelineDragCleanup = React.useRef(null)
       const suppressHourClick = React.useRef(false)
       const movingExisting = React.useRef(false)
-      React.useEffect(() => { timelineDragRef.current = timelineDrag }, [timelineDrag])
-      const minOf = (value) => {
-        const [hour, minute] = String(value || '0:0').split(':').map(Number)
-        return (Number.isFinite(hour) ? hour : 0) * 60 + (Number.isFinite(minute) ? minute : 0)
-      }
-      const labelOf = (minute) => `${pad(Math.floor(Math.max(0, minute) / 60) % 24)}:${pad(Math.max(0, minute) % 60)}`
+      const timelineDate = React.useRef(form.date)
+      timelineDate.current = form.date
+      const labelOf = (minute) => `${pad(Math.floor(Math.max(0, minute) / 60) % 24)}:${pad(Math.floor(Math.max(0, minute) % 60))}`
+      const pointOf = (minute) => ({
+        date: addDaysYmd(form.date, Math.floor(minute / 1440)),
+        time: labelOf(minute),
+      })
       const snapMinute = (value) => Math.round(value / SNAP_MIN) * SNAP_MIN
       const clampStart = (start, duration) => Math.max(0, Math.min(1440 - Math.max(SNAP_MIN, duration), start))
       const clientYToMinute = (clientY) => {
@@ -1520,109 +1962,178 @@ window.__ModuleLoader__.load({
         return false
       }
       const wallMinute = (stamp) => {
-        const dayStart = new Date(`${form.date}T00:00:00+08:00`)
-        const wall = new Date(/[zZ]|[+-]\d{2}:\d{2}$/.test(stamp || '') ? stamp : `${String(stamp || '').slice(0, 19)}+08:00`)
-        if (!Number.isFinite(+wall) || !Number.isFinite(+dayStart)) return null
-        return (wall - dayStart) / 60000
+        const offset = (calendarTimestamp(stamp) - calendarTimestamp(`${form.date}T00:00:00`)) / 60_000
+        return Number.isFinite(offset) ? offset : null
       }
       const beginTimelineDrag = (event, spec) => {
-        if (saving || form.allDay) return
+        if (event.button !== 0) return
         event.preventDefault()
         event.stopPropagation()
+        if (timelineDragRef.current || saving || (spec.mode === 'draft' && form.allDay)) return
+        if (spec.mode === 'existing' && movingExisting.current) {
+          setTimelineStatus('上一条调整正在保存，请稍候再拖动')
+          return
+        }
+        if (spec.mode === 'draft') stopAutoTime()
         suppressHourClick.current = false
         const pointer = clientYToMinute(event.clientY)
+        const anchor = spec.edge === 'end' ? spec.originEnd : spec.originStart
         const next = {
           ...spec,
-          grabOffset: pointer - spec.originStart,
+          grabOffset: pointer - anchor,
           followStart: spec.originStart,
           previewStart: spec.originStart,
+          previewEnd: spec.originEnd,
           pointerId: event.pointerId,
         }
         timelineDragRef.current = next
         setTimelineDrag(next)
-        try { event.currentTarget.setPointerCapture(event.pointerId) } catch (_) {}
+        // Track the whole gesture at window capture phase. Pointer capture is
+        // only an optimization: losing it must not discard an active drag.
+        const host = timeline.current?.ownerDocument?.defaultView || window
+        let lastPoint = { pointerId: event.pointerId, clientY: event.clientY, buttons: event.buttons }
+        const move = (point) => {
+          if (point.pointerId !== next.pointerId) return
+          lastPoint = point
+          onTimelinePointerMove(point)
+        }
+        const up = (point) => {
+          if (point.pointerId !== next.pointerId) return
+          // Include the release position even if the browser coalesced the last move.
+          onTimelinePointerMove(point)
+          finishTimelineDrag(point)
+        }
+        const cancel = () => clearTimelineDrag({ pointerId: next.pointerId })
+        const scroll = () => onTimelinePointerMove(lastPoint)
+        const track = timeline.current
+        host.addEventListener('pointermove', move, true)
+        host.addEventListener('pointerup', up, true)
+        host.addEventListener('pointercancel', clearTimelineDrag, true)
+        host.addEventListener('blur', cancel)
+        track?.addEventListener('scroll', scroll)
+        timelineDragCleanup.current = () => {
+          host.removeEventListener('pointermove', move, true)
+          host.removeEventListener('pointerup', up, true)
+          host.removeEventListener('pointercancel', clearTimelineDrag, true)
+          host.removeEventListener('blur', cancel)
+          track?.removeEventListener('scroll', scroll)
+          timelineDragCleanup.current = null
+        }
+        // Capture on the stable scroll container, not a handle/card that can
+        // change position or disappear while React updates the drag preview.
+        try { timeline.current?.setPointerCapture(event.pointerId) } catch (_) {}
+      }
+      const resizePreview = (drag, minute) => {
+        const minDuration = 5
+        if (drag.edge === 'start') {
+          const max = Math.min(1440 - minDuration, Math.floor(drag.originEnd - minDuration))
+          return { ...drag, previewStart: max < 0 ? drag.originStart : Math.max(0, Math.min(max, minute)) }
+        }
+        const min = Math.max(0, Math.ceil(drag.originStart + minDuration))
+        return { ...drag, previewEnd: min > 1440 ? drag.originEnd : Math.max(min, Math.min(1440, minute)) }
       }
       const onTimelinePointerMove = (event) => {
         const drag = timelineDragRef.current
-        if (!drag) return
-        const duration = Math.max(SNAP_MIN, drag.duration)
+        if (!drag || drag.pointerId !== event.pointerId) return
         const raw = clientYToMinute(event.clientY) - drag.grabOffset
-        const followStart = clampStart(raw, duration)
-        const previewStart = clampStart(snapMinute(raw), duration)
-        if (Math.abs(followStart - drag.originStart) >= 1) suppressHourClick.current = true
-        const next = { ...drag, followStart, previewStart }
+        let next
+        if (drag.edge) {
+          const origin = drag.edge === 'start' ? drag.originStart : drag.originEnd
+          next = Math.abs(raw - origin) * PX_PER_MIN < 2
+            ? { ...drag, previewStart: drag.originStart, previewEnd: drag.originEnd }
+            : resizePreview(drag, snapMinute(raw))
+        } else {
+          const followStart = clampStart(raw, drag.duration)
+          const previewStart = clampStart(snapMinute(raw), drag.duration)
+          next = { ...drag, followStart, previewStart }
+        }
         timelineDragRef.current = next
         setTimelineDrag(next)
       }
-      const finishTimelineDrag = async (event) => {
+      const clearTimelineDrag = (event) => {
         const drag = timelineDragRef.current
-        if (!drag) return
-        try { event.currentTarget.releasePointerCapture?.(drag.pointerId) } catch (_) {}
-        const duration = Math.max(SNAP_MIN, drag.duration)
-        const start = clampStart(snapMinute(drag.previewStart ?? drag.followStart ?? drag.originStart), duration)
-        const end = start + duration
+        if (!drag || drag.pointerId !== event.pointerId) return null
         timelineDragRef.current = null
+        timelineDragCleanup.current?.()
         setTimelineDrag(null)
-        if (start === drag.originStart) {
-          suppressHourClick.current = false
+        try {
+          if (timeline.current?.hasPointerCapture(event.pointerId)) timeline.current.releasePointerCapture(event.pointerId)
+        } catch (_) {}
+        return drag
+      }
+      React.useEffect(() => () => {
+        timelineDragCleanup.current?.()
+        const drag = timelineDragRef.current
+        timelineDragRef.current = null
+        try { if (drag && timeline.current?.hasPointerCapture(drag.pointerId)) timeline.current.releasePointerCapture(drag.pointerId) } catch (_) {}
+      }, [])
+      const commitTimelineDrag = async (drag) => {
+        const start = drag.previewStart
+        const end = drag.edge ? drag.previewEnd : start + drag.duration
+        const startChanged = drag.edge !== 'end' && start !== drag.originStart
+        const endChanged = drag.edge === 'end' && end !== drag.originEnd
+        if (!startChanged && !endChanged) return
+        const startPoint = pointOf(start)
+        const endPoint = pointOf(end)
+        const startFields = { date: startPoint.date, startTime: startPoint.time }
+        const endFields = { endDate: endPoint.date, endTime: endPoint.time }
+        if (drag.mode === 'draft') {
+          patch({
+            ...(drag.edge !== 'end' ? startFields : {}),
+            ...(drag.edge !== 'start' ? endFields : {}),
+          }, true)
           return
         }
+        const updated = {
+          ...drag.event,
+          ...(drag.edge !== 'end' ? { start: `${startPoint.date}T${startPoint.time}:00` } : {}),
+          ...(drag.edge !== 'start' ? { end: `${endPoint.date}T${endPoint.time}:00` } : {}),
+        }
+        setForm((old) => ({ ...old, timelineChanges: { ...old.timelineChanges, [updated.id]: updated } }))
+        setTimelineStatus('调整已暂存')
+      }
+      const finishTimelineDrag = (event) => {
+        const drag = clearTimelineDrag(event)
+        if (!drag) return
         // Swallow the click that browsers synthesize after a drag.
         suppressHourClick.current = true
         setTimeout(() => { suppressHourClick.current = false }, 0)
-        if (drag.mode === 'draft') {
-          patch({ allDay: false, startTime: labelOf(start), endTime: labelOf(end), endDate: form.date, date: form.date })
-          return
-        }
-        if (drag.mode !== 'existing' || !drag.event || movingExisting.current) return
-        if (calendars.find((calendar) => calendar.id === drag.event.calendarId)?.canEdit === false) {
-          setTimelineStatus('此日历为只读，无法移动日程')
-          return
-        }
-        const snapshot = timelineData
-        const newStartIso = `${form.date}T${labelOf(start)}:00`
-        const newEndIso = `${form.date}T${labelOf(end)}:00`
-        setTimelineData((prev) =>
-          (prev || []).map((row) => (row.id === drag.event.id ? { ...row, start: newStartIso, end: newEndIso } : row)),
-        )
-        setTimelineStatus('正在移动日程…')
-        movingExisting.current = true
-        try {
-          await api('/calendar/update', {
-            method: 'POST',
-            body: {
-              eventId: realTimelineId(drag.event),
-              subject: drag.event.subject || '(无主题)',
-              date: form.date,
-              endDate: form.date,
-              startTime: labelOf(start),
-              endTime: labelOf(end),
-              allDay: false,
-              datesOnly: true,
-              calendarId: drag.event.calendarId || '',
-            },
-          })
-          setTimelineStatus('日程已移动')
-          const from = new Date(`${form.date}T00:00:00+08:00`)
-          const to = new Date(from.getTime() + 86400000)
-          const data = await api(`/calendar?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)
-          setTimelineData(data.events ?? [])
-        } catch (failure) {
-          setTimelineData(snapshot)
-          setTimelineStatus(`移动失败：${failure.message}`)
-        } finally {
-          movingExisting.current = false
-        }
+        void commitTimelineDrag(drag)
+      }
+      const resizeHandle = (spec, edge) => {
+        const minute = edge === 'start' ? spec.originStart : spec.originEnd
+        if (!Number.isFinite(minute) || minute < 0 || minute > 1440 ||
+          (edge === 'start' ? minute === 1440 : minute === 0)) return null
+        const label = edge === 'start' ? '调整开始时间' : '调整结束时间'
+        const resize = { ...spec, edge }
+        return h('button', {
+          type: 'button',
+          className: `ob-event-resize-handle ${edge}`,
+          title: `拖动${label}`,
+          'aria-label': label,
+          onPointerDown: (event) => beginTimelineDrag(event, resize),
+          onKeyDown: (event) => {
+            if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+            event.preventDefault()
+            if (saving || timelineDragRef.current || (spec.mode === 'existing' && movingExisting.current)) return
+            const direction = event.key === 'ArrowUp' ? -1 : 1
+            const next = (direction < 0 ? Math.ceil(minute / SNAP_MIN) : Math.floor(minute / SNAP_MIN)) * SNAP_MIN + direction * SNAP_MIN
+            void commitTimelineDrag(resizePreview({
+              ...resize, previewStart: spec.originStart, previewEnd: spec.originEnd,
+            }, next))
+          },
+        })
       }
 
       const selectHour = (hour) => {
+        if (readOnly) return
         if (suppressHourClick.current || timelineDragRef.current) { suppressHourClick.current = false; return }
         const duration = !form.allDay && validRange ? Math.max(SNAP_MIN, endMinute - startMinute) : 30
         const start = hour * 60
-        const end = Math.min(1440, start + duration)
-        patch({ allDay: false, startTime: labelOf(start), endTime: labelOf(end), endDate: form.date })
+        const end = pointOf(Math.min(1440, start + duration))
+        patch({ allDay: false, startTime: labelOf(start), endTime: end.time, endDate: end.date })
       }
-      const DURATION_PRESETS = [5, 15, 30, 60]
+      const DURATION_PRESETS = [15, 30, 60, 120]
       const currentDuration = (!form.allDay && form.endDate === form.date)
         ? (mins(form.endTime) - mins(form.startTime))
         : null
@@ -1642,35 +2153,83 @@ window.__ModuleLoader__.load({
           endTime: labelOf(endMin),
         })
       }
-      const visibleTimeline = (timelineData || []).filter((item) => !isEditedTimelineItem(item))
-      const field = (icon, children, cls = '') => h('div', { className: `ob-event-field ${cls}` }, h(MailIcon, { name: icon, size: 19 }), h('div', { className: 'ob-event-field-content' }, children))
+      const timelineBlocks = timelineData.map((item) => form.timelineChanges?.[item.id] || form.timelineSaved?.[item.id] || item).filter((item) => !isEditedTimelineItem(item)).flatMap((item) => {
+        const start = wallMinute(item.start), end = wallMinute(item.end)
+        if (start == null || end == null) return []
+        const dragging = timelineDrag?.mode === 'existing' && timelineDrag.event.id === item.id
+        const resizing = dragging && timelineDrag.edge
+        const top = Math.max(0, resizing ? timelineDrag.previewStart : start)
+        const bottom = Math.min(1440, resizing ? timelineDrag.previewEnd : end)
+        return bottom > top ? [{ item, start, end, top, bottom, dragging, resizing }] : []
+      })
+      const draftDuration = Math.max(SNAP_MIN, endMinute - startMinute)
+      const draggingDraft = timelineDrag?.mode === 'draft'
+      const resizingDraft = draggingDraft && timelineDrag.edge
+      const draftStart = resizingDraft ? timelineDrag.previewStart : draggingDraft ? timelineDrag.followStart : startMinute
+      const draftEnd = resizingDraft ? timelineDrag.previewEnd : draggingDraft ? draftStart + draftDuration : endMinute
+      const draftBlock = validRange ? { top: draftStart, bottom: Math.min(1440, draftEnd) } : null
+      const ghostBlock = timelineDrag && !timelineDrag.edge
+        ? { top: timelineDrag.previewStart, bottom: Math.min(1440, timelineDrag.previewStart + timelineDrag.duration) }
+        : null
+      const blocks = timelineBlocks.filter(({ dragging, resizing }) => !dragging || resizing)
+      if (draftBlock) blocks.push(draftBlock)
+      if (ghostBlock && !draggingDraft) blocks.push(ghostBlock)
+
+      // An overlap group shares its columns. A new group starts at the previous group's end.
+      let group = { lanes: [], end: 0 }
+      for (const block of blocks.sort((a, b) => a.top - b.top)) {
+        if (block.top >= group.end) {
+          group.nextTop = block.top
+          group = { lanes: [], end: block.bottom }
+        }
+        const available = group.lanes.findIndex((last) => last.bottom <= block.top)
+        const lane = available < 0 ? group.lanes.length : available
+        if (available >= 0) group.lanes[lane].nextTop = block.top
+        block.lane = lane
+        block.group = group
+        group.lanes[lane] = block
+        group.end = Math.max(group.end, block.bottom)
+      }
+      const laneStyle = (block) => {
+        const count = block?.group?.lanes.length ?? 1
+        const lane = block?.lane ?? 0
+        return { left: `${lane / count * 100}%`, right: `${(count - lane - 1) / count * 100}%` }
+      }
+      const blockStyle = (block, minHeight) => {
+        const limit = (Math.min(block.nextTop ?? 1440, block.group?.nextTop ?? 1440) - block.top) * PX_PER_MIN
+        const height = Math.min(Math.max(minHeight, (block.bottom - block.top) * PX_PER_MIN), limit)
+        return { ...laneStyle(block), top: block.top * PX_PER_MIN, height, ...(height < 18 ? { paddingBlock: 0 } : {}) }
+      }
+      const field = (icon, children, cls = '', onContextMenu) => h('div', { className: `ob-event-field ${cls}`, onContextMenu },
+        h(MailIcon, { name: icon, size: 19 }), h('div', { className: 'ob-event-field-content' }, children))
       return h(Overlay, null, h('div', { className: 'ob-event-mask' },
-        h('form', { ref: dialog, className: 'ob-event-editor', role: 'dialog', 'aria-modal': true, 'aria-label': '新建活动', onKeyDown: keyboard,
-          onSubmit: (event) => { event.preventDefault(); if (!saving && validRange) onSave() } },
-          h('header', { className: 'ob-event-titlebar' }, h('span', null, form.eventId ? '编辑日程 - 日历' : '新建活动 - 日历'),
-            h('button', { type: 'button', disabled: saving, onClick: close, 'aria-label': '关闭新建活动' }, '×')),
+        h('form', { ref: dialog, className: 'ob-event-editor', role: 'dialog', 'aria-modal': true, 'aria-label': editorTitle, onKeyDown: keyboard,
+          onSubmit: (event) => { event.preventDefault(); if (canSave) onSave() } },
+          h('header', { className: 'ob-event-titlebar' }, h('span', null, `${editorTitle} - 日历`),
+            h('button', { type: 'button', disabled: saving, onClick: close, 'aria-label': `关闭${editorTitle}` }, '×')),
           h('div', { className: 'ob-event-toolbar' },
-            h('button', { type: 'submit', className: 'ob-command ob-new-mail', disabled: saving || !form.subject.trim() || !validRange || !writable.length },
-              h(MailIcon, { name: 'save' }), saving ? '保存中…' : form.attendees.trim() ? '发送邀请' : '保存'),
+            h('button', { type: 'submit', className: 'ob-command ob-new-mail', disabled: !canSave },
+              h(MailIcon, { name: 'save' }), saving ? '保存中…' : movingCalendar ? '移到所选日历' : form.attendees.trim() ? '发送邀请' : '保存'),
             form.eventId && onDelete
-              ? h('button', { type: 'button', className: 'ob-command', disabled: saving, onClick: onDelete },
+              ? h('button', { type: 'button', className: 'ob-command', disabled: saving || readOnly, onClick: onDelete },
                   h(MailIcon, { name: 'trash', size: 16 }), '删除日程')
               : null,
-            h('span', { className: 'ob-event-toolbar-label' }, h(MailIcon, { name: 'calendar' }), '活动'),
-            h('label', { className: 'ob-event-toolbar-label' }, h(MailIcon, { name: 'calendar', size: 16 }),
-              h('select', { 'aria-label': '显示为', disabled: saving, value: form.showAs, onChange: (event) => patch({ showAs: event.target.value }) },
-                [['busy','忙碌'],['free','空闲'],['tentative','暂定'],['oof','外出'],['workingElsewhere','在别处工作']].map(([value,label]) => h('option',{key:value,value},label)))),
             h('label', { className: 'ob-event-toolbar-label' }, h(MailIcon, { name: 'clock', size: 16 }),
-              h('select', { 'aria-label': '提醒', disabled: saving, value: form.reminder, onChange: (event) => patch({ reminder: event.target.value }) },
+              h('select', { 'aria-label': '提醒', disabled: saving || readOnly, value: form.reminder, onChange: (event) => patch({ reminder: event.target.value }) },
                 [['-1','不提醒'],['0','开始时'],['5','提前 5 分钟'],['15','提前 15 分钟'],['30','提前 30 分钟'],['60','提前 1 小时'],['1440','提前 1 天']].map(([value,label])=>h('option',{key:value,value},label))))),
-          error ? h('div',{className:'ob-event-error',role:'alert'},error) : null,
-          discarding ? h('div',{className:'ob-event-discard',role:'alert'},'放弃未保存的活动？',
-            h('button',{type:'button',onClick:onClose},'放弃'),h('button',{type:'button',onClick:()=>setDiscarding(false)},'继续编辑')) : null,
           h('div',{className:'ob-event-layout'},
             h('div',{className:'ob-event-left'},
-              h('fieldset',{className:'ob-event-fields',disabled:saving},
-                field('calendar', h('select',{value:form.calendarId,'aria-label':'保存到日历',onChange:(event)=>patch({calendarId:event.target.value})},
-                  writable.length ? writable.map((item)=>h('option',{key:item.id,value:item.id},item.name)) : h('option',{value:''},'没有可写入的日历'))),
+              h('fieldset',{className:'ob-event-fields',disabled:saving || readOnly},
+                field('calendar', h('select',{
+                  value:form.calendarId, 'aria-label':'保存到日历', disabled:readOnly,
+                  title:readOnly ? '所属日历为只读' : undefined,
+                  onChange:(event)=>patch({calendarId:event.target.value}),
+                },
+                  includeSelected ? h('option',{value:form.calendarId,disabled:!selectedCalendar || readOnly},
+                    selectedCalendar?.name || (form.eventId ? '所属日历不可用' : writable.length ? '请选择日历' : '没有可写入的日历')) : null,
+                  calendarOptions.map((item)=>h('option',{key:item.id,value:item.id},item.name))),
+                  'ob-event-calendar-field', selectedCalendar && defaultCalendarAction
+                    ? (event) => openContextMenu(event, [defaultCalendarAction(selectedCalendar)]) : undefined),
                 field('compose',h('input',{name:'subject',required:true,maxLength:255,placeholder:'添加标题','aria-label':'活动标题',value:form.subject,onChange:(event)=>patch({subject:event.target.value})}),'ob-event-subject'),
                 field('people',h('input',{placeholder:'邀请必需的与会者（邮箱，多个用逗号分隔）','aria-label':'与会者邮箱',value:form.attendees,onChange:(event)=>patch({attendees:event.target.value})})),
                 field('clock',[
@@ -1678,13 +2237,13 @@ window.__ModuleLoader__.load({
                     h('div',{className:'ob-event-date-row',key:'start'},
                       h('span',null,'开始'),
                       h('div',{className:'ob-event-date-inputs'},
-                        h('input',{type:'date',required:true,'aria-label':'开始日期',value:form.date,onChange:(event)=>changeDate(event.target.value)}),
-                        form.allDay ? null : h('input',{type:'time',required:true,'aria-label':'开始时间',value:form.startTime,onChange:(event)=>patch({startTime:event.target.value})}))),
+                        h(EventDatePicker,{label:'开始',value:form.date,onChange:changeDate,onInteract:stopAutoTime}),
+                        form.allDay ? null : h(EventTimePicker,{label:'开始',value:form.startTime,onChange:(time)=>patch({startTime:time}),onInteract:stopAutoTime}))),
                     h('div',{className:'ob-event-date-row',key:'end'},
                       h('span',null,'结束'),
                       h('div',{className:'ob-event-date-inputs'},
-                        h('input',{type:'date',required:true,min:form.date,'aria-label':'结束日期',value:form.endDate,onChange:(event)=>patch({endDate:event.target.value})}),
-                        form.allDay ? null : h('input',{type:'time',required:true,'aria-label':'结束时间',value:form.endTime,onChange:(event)=>patch({endTime:event.target.value})}))),
+                        h(EventDatePicker,{label:'结束',value:form.endDate,min:form.date,onChange:(date)=>patch({endDate:date}),onInteract:stopAutoTime}),
+                        form.allDay ? null : h(EventTimePicker,{label:'结束',value:form.endTime,onChange:(time)=>patch({endTime:time}),onInteract:stopAutoTime}))),
                     form.allDay ? null : h('div',{className:'ob-event-duration',key:'duration','aria-label':'时长预设'},
                       h('span',{className:'ob-event-duration-label'},'时长'),
                       DURATION_PRESETS.map((minutes)=>h('button',{
@@ -1694,73 +2253,97 @@ window.__ModuleLoader__.load({
                         disabled:saving,
                         'aria-pressed': currentDuration === minutes,
                         onClick:()=>applyDuration(minutes),
-                      }, minutes >= 60 ? '60 分钟' : `${minutes} 分钟`)))),
+                      }, minutes === 120 ? '2 小时' : `${minutes} 分钟`)))),
                   h('div',{className:'ob-event-date-options',key:'options'},h('label',null,h('input',{type:'checkbox',checked:form.allDay,onChange:(event)=>patch({allDay:event.target.checked})}),'全天'),h('span',null,'北京时间 (UTC+08:00)')),
                   !validRange ? h('span',{className:'ob-event-error-text',key:'error'},'结束时间需要晚于开始时间') : null]),
-                field('location',h('input',{placeholder:'添加位置','aria-label':'位置',value:form.location,onChange:(event)=>patch({location:event.target.value})}))),
+                field('location',h('input',{placeholder:'添加位置','aria-label':'位置',value:form.location,onChange:(event)=>patch({location:event.target.value})})),
+                error || closeError ? h('div',{className:'ob-event-error',role:'alert'},error || closeError) : null,
+                confirmClose ? h(Overlay,null,h('div',{className:'ob-event-confirm-mask',onKeyDown:(event)=>{
+                  event.stopPropagation()
+                  if(event.key === 'Escape' && !saving) { event.preventDefault(); setConfirmClose(false) }
+                }},h('div',{className:'ob-event-confirm-dialog',role:'alertdialog','aria-modal':true,'aria-label':'保存日程修改'},
+                  h('strong',null,'保存日程修改？'),
+                  h('p',null,saving ? '正在保存，请稍候…' : '有未保存的修改。点击保存后提交，或放弃本次修改。'),
+                  error || closeError ? h('p',{role:'alert'},error || closeError) : null,
+                  h('div',{className:'ob-event-confirm-actions'},
+                    h('button',{type:'button',className:'ob-btn',disabled:saving,onClick:()=>setConfirmClose(false),autoFocus:true},'继续编辑'),
+                    h('button',{type:'button',className:'ob-btn',disabled:saving,onClick:onClose},'放弃'),
+                    h('button',{type:'button',className:'ob-btn primary',disabled:!canSave,onClick:()=>onSave()},saving ? '保存中…' : '保存'))))) : null),
               h('div',{className:'ob-event-body-card'},h(MailIcon,{name:'notes',size:19}),
-                h('textarea',{disabled:saving,'aria-label':'活动说明',placeholder:'添加说明或议程…',value:form.body,onChange:(event)=>patch({body:event.target.value})}))),
+                h(EventAgendaEditor, {
+                  subject: form.subject, body: form.body, saving: saving || readOnly, patch,
+                  durationMinutes: !form.allDay && validRange ? Math.round((end - start) / 60_000) : null,
+                }))),
             h('aside',{className:'ob-event-schedule'},
-              h('div',{className:'ob-event-schedule-head'},h('button',{type:'button',disabled:saving,'aria-label':'前一天',onClick:()=>shiftDate(-1)},'‹'),h(MailIcon,{name:'calendar',size:17}),
-                h('button',{type:'button',disabled:saving,'aria-label':'后一天',onClick:()=>shiftDate(1)},'›'),h('strong',null,form.date.replaceAll('-',' / '))),
-              h('div',{className:'ob-event-timeline-status',role:'status'},timelineStatus || (form.eventId ? '当天日程 · 拖动事件块改时间，点击空白处换到该时段' : '当天日程 · 拖动绿色块改时间，点击空白处设置开始时间')),
-              h('div',{className:'ob-event-timeline-scroll',ref:timeline},h('div',{className:'ob-event-timeline'},
+              h('div',{className:'ob-event-schedule-head'},h('button',{type:'button',disabled:saving || readOnly,'aria-label':'前一天',onClick:()=>shiftDate(-1)},'‹'),h(MailIcon,{name:'calendar',size:17}),
+                h('button',{type:'button',disabled:saving || readOnly,'aria-label':'后一天',onClick:()=>shiftDate(1)},'›'),h('strong',null,form.date.replaceAll('-',' / ')),
+                h('div',{className:'ob-event-timeline-status',role:'status'},checkingTime ? '正在查找可用时段…' : timelineStatus)),
+              h('div',{className:'ob-event-timeline-scroll',ref:timeline,
+                onDragStart:(event)=>event.preventDefault(),
+              },h('div',{className:'ob-event-timeline'},
                 Array.from({length:24},(_,hour)=>h('button',{key:hour,type:'button',className:`ob-event-hour${timelineDrag && Math.floor((timelineDrag.previewStart ?? 0)/60)===hour ? ' slot-hot' : ''}`,disabled:saving,'aria-label':`从 ${hour}:00 开始`,onClick:()=>selectHour(hour)},h('span',null,hour))),
-                visibleTimeline.map((item)=>{
-                  const a0 = wallMinute(item.start), b0 = wallMinute(item.end)
-                  if (a0 == null || b0 == null) return null
-                  const dragging = timelineDrag && timelineDrag.mode === 'existing' && timelineDrag.event && timelineDrag.event.id === item.id
-                  const a = Math.max(0, dragging ? timelineDrag.originStart : a0)
-                  const b = Math.min(1440, dragging ? timelineDrag.originStart + timelineDrag.duration : b0)
-                  const editable = !item.allDay && calendars.find((calendar) => calendar.id === item.calendarId)?.canEdit !== false
-                  return b>a ? h('div',{
+                h('div',{className:'ob-event-block-track'},timelineBlocks.map((block)=>{
+                  const { item, start: a0, end: b0, dragging, resizing } = block
+                  const canDelete = calendars.find((calendar) => calendar.id === item.calendarId)?.canEdit !== false
+                  const editable = !item.allDay && canDelete
+                  const resize = { mode: 'existing', event: item, originStart: a0, originEnd: b0 }
+                  return h('div',{
                     key:item.id,
-                    className:`ob-event-existing${editable ? ' interactive' : ''}${dragging ? ' drag-origin' : ''}`,
-                    title: editable ? `${item.subject}（拖动可改时间）` : item.subject,
-                    style:{top:a*PX_PER_MIN,height:Math.max(18,(b-a)*PX_PER_MIN),borderLeftColor:item.color||'#0f6cbd'},
+                    className:`ob-event-existing${editable ? ' interactive' : ''}${resizing ? ' resizing' : dragging ? ' drag-origin' : ''}`,
+                    title: editable ? `${item.subject}（拖动边缘可调整时长）` : item.subject,
+                    style:{...blockStyle(block, 18),'--ob-event-color':timelineEventColor(item),pointerEvents:'auto'},
+                    onClick: editable || saving ? undefined : (event) => {
+                      const hour = Math.floor(clientYToMinute(event.clientY) / 60)
+                      if (hour >= 0 && hour < 24) selectHour(hour)
+                    },
+                    onContextMenu: (event) => openContextMenu(event, [
+                      { label: '复制日程标题', icon: 'notes', run: () => copyOutlookText(item.subject) },
+                      { separator: true },
+                      { label: '删除日程', icon: 'trash', danger: true, disabled: !canDelete || saving || movingExisting.current, run: async () => {
+                        if (await onDeleteTimelineEvent(item, true)) {
+                          setTimelineData((rows) => rows.filter((row) => row.id !== item.id))
+                          setForm((old) => { const changes = { ...old.timelineChanges }; delete changes[item.id]; return { ...old, timelineChanges: changes } })
+                        }
+                      } },
+                    ]),
                     onPointerDown: editable ? (event) => beginTimelineDrag(event, {
                       mode: 'existing',
                       event: item,
                       duration: Math.max(SNAP_MIN, b0 - a0),
                       originStart: Math.max(0, a0),
                     }) : undefined,
-                    onPointerMove: editable ? onTimelinePointerMove : undefined,
-                    onPointerUp: editable ? finishTimelineDrag : undefined,
-                    onPointerCancel: editable ? finishTimelineDrag : undefined,
-                  }, item.subject) : null
+                  }, resizing ? `${labelOf(timelineDrag.previewStart)} - ${labelOf(timelineDrag.previewEnd)} · ${item.subject}` : item.subject,
+                    editable && resizeHandle(resize, 'start'),
+                    editable && resizeHandle(resize, 'end'))
                 }),
-                validRange ? (() => {
-                  const duration = Math.max(SNAP_MIN, endMinute - startMinute)
-                  const dragging = timelineDrag && timelineDrag.mode === 'draft'
-                  const top = (dragging ? timelineDrag.followStart : startMinute) * PX_PER_MIN
-                  const height = Math.max(24, duration * PX_PER_MIN)
+                draftBlock ? (() => {
+                  const resize = { mode: 'draft', originStart: startMinute, originEnd: (end - new Date(`${form.date}T00:00:00+08:00`)) / 60000 }
+                  const editable = !form.allDay && !saving && !readOnly
                   return h('div',{
-                    className:`ob-event-draft-block${dragging ? ' dragging' : ''}`,
-                    style:{left:visibleTimeline.length?'55%':44,top,height},
-                    onPointerDown: form.allDay || saving ? undefined : (event) => beginTimelineDrag(event, {
+                    className:`ob-event-draft-block${draggingDraft ? ' dragging' : ''}`,
+                    style:{...blockStyle(draftBlock, 24),'--ob-event-color':calendarColor},
+                    onPointerDown: editable ? (event) => beginTimelineDrag(event, {
                       mode: 'draft',
-                      duration,
+                      duration: draftDuration,
                       originStart: startMinute,
-                    }),
-                    onPointerMove: onTimelinePointerMove,
-                    onPointerUp: finishTimelineDrag,
-                    onPointerCancel: finishTimelineDrag,
+                    }) : undefined,
                   },
-                    h('strong',null,form.allDay?'全天':`${dragging ? labelOf(timelineDrag.followStart) : form.startTime} - ${form.endDate>form.date?`${form.endDate} `:''}${dragging ? labelOf(timelineDrag.followStart + duration) : form.endTime}`),
-                    h('span',null,form.subject||'新活动'))
+                    h('strong',null,form.allDay?'全天':`${draggingDraft ? labelOf(draftStart) : form.startTime} - ${draggingDraft && resizingDraft !== 'start' ? (draftEnd === 1440 ? '次日 00:00' : labelOf(draftEnd)) : (form.endDate>form.date?`${form.endDate} `:'') + form.endTime}`),
+                    h('span',null,form.subject||'新活动'),
+                    editable && resizeHandle(resize, 'start'),
+                    editable && resizeHandle(resize, 'end'))
                 })() : null,
-                timelineDrag ? h('div',{
+                ghostBlock ? h('div',{
                   className:`ob-event-drag-ghost ${timelineDrag.mode === 'draft' ? 'draft' : 'existing'}`,
                   style:{
-                    top: (timelineDrag.previewStart ?? 0) * PX_PER_MIN,
-                    height: Math.max(24, Math.max(SNAP_MIN, timelineDrag.duration) * PX_PER_MIN),
-                    borderLeftColor: timelineDrag.mode === 'draft' ? '#249a4e' : (timelineDrag.event?.color || '#0f6cbd'),
-                    ...(timelineDrag.mode === 'draft' && !visibleTimeline.length ? { left: 44 } : {}),
+                    ...blockStyle(ghostBlock, 24),
+                    ...(draggingDraft ? laneStyle(draftBlock) : {}),
+                    '--ob-event-color': draggingDraft ? calendarColor : timelineEventColor(timelineDrag.event),
                   },
                 },
                   h('strong',null,`${labelOf(timelineDrag.previewStart)} - ${labelOf((timelineDrag.previewStart ?? 0) + Math.max(SNAP_MIN, timelineDrag.duration))}`),
                   h('span',null,timelineDrag.mode === 'draft' ? (form.subject||'新活动') : (timelineDrag.event?.subject || ''))
-                ) : null)))))))
+                ) : null))))))))
     }
 
     function MailRow(props) {
@@ -1812,18 +2395,19 @@ window.__ModuleLoader__.load({
 
     function MailBlock(props) {
       const { rows, filter, setFilter, category, setCategory, focus, setFocus,
-        selected, onSelect, t, timeOf, surface } = props
+        selected, onSelect, t, folder, surface } = props
       const [filtersOpen, setFiltersOpen] = React.useState(false)
       const [ascending, setAscending] = React.useState(false)
       const [collapsed, setCollapsed] = React.useState({})
+      const listDate = (row) => parseDate(folder === 'deleteditems' && row.modifiedAt ? row.modifiedAt : row.receivedAt)
       const visible = rows
         .filter((row) => filter !== 'unread' || !row.isRead)
         .filter((row) => category === 'all' || (row.category ?? 'other') === category)
         .filter((row) => focus === 'all' || (focus === 'focused' ? row.focused !== false : row.focused === false))
-        .sort((a, b) => (ascending ? 1 : -1) * ((parseDate(a.receivedAt)?.getTime() || 0) - (parseDate(b.receivedAt)?.getTime() || 0)))
+        .sort((a, b) => (ascending ? 1 : -1) * ((listDate(a)?.getTime() || 0) - (listDate(b)?.getTime() || 0)))
       const groups = []
       for (const row of visible) {
-        const label = dayGroupLabel(parseDate(row.receivedAt) ?? new Date(), t)
+        const label = dayGroupLabel(listDate(row) ?? new Date(), t)
         let group = groups[groups.length - 1]
         if (!group || group.label !== label) groups.push(group = { label, items: [] })
         group.items.push(row)
@@ -1852,7 +2436,7 @@ window.__ModuleLoader__.load({
                 'aria-expanded': !collapsed[group.label], onClick: () => setCollapsed({ ...collapsed, [group.label]: !collapsed[group.label] }) },
                 h(MailIcon, { name: 'chevron', size: 14 }), group.label),
               collapsed[group.label] ? null : group.items.map((row) => h(MailRow, { key: row.id, row,
-                active: selected?.id === row.id, t, time: timeOf(row), onSelect, onContextRow: props.onContextRow }))))))
+                active: selected?.id === row.id, t, time: fmtMailTime(listDate(row), t), onSelect, onContextRow: props.onContextRow }))))))
     }
 
     function MailWorkspace(props) {
@@ -1909,7 +2493,7 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', className: 'ob-folder-heading ob-account-heading', title: account, 'aria-expanded': accountOpen, onClick: () => setAccountOpen(!accountOpen) },
               h('span', { className: accountOpen ? '' : 'ob-rotate' }, h(MailIcon, { name: 'chevron', size: 14 })), h('span', { className: 'ob-folder-name' }, account || 'Outlook')),
             accountOpen ? ['inbox', 'junkemail', 'drafts', 'sentitems', 'deleteditems', 'archive'].map((key) => allFolders.find((f) => f.key === key)).filter(Boolean).map(folderButton) : null),
-          h(MailBlock, { ...props, onContextRow }),
+          h(MailBlock, { ...props, key: folder, onContextRow }),
           h('section', { className: 'ob-reading-pane',
             style: readingSurface, 'aria-label': selected ? '邮件阅读区' : '邮件欢迎页',
             onContextMenu: (event) => { if (selected && !event.target.closest('input,textarea,[contenteditable]') && !window.getSelection()?.toString()) onContextRow(event, selected) } },
@@ -2196,6 +2780,8 @@ window.__ModuleLoader__.load({
       const [draft, setDraft] = React.useState('')
       const [intent, setIntent] = React.useState('')
       const [summary, setSummary] = React.useState(null)
+      const [translation, setTranslation] = React.useState(null)
+      const [showTranslation, setShowTranslation] = React.useState(false)
       const [suggestion, setSuggestion] = React.useState(null)
       const [aiStatus, setAiStatus] = React.useState(null)
       const [aiMeta, setAiMeta] = React.useState(null)
@@ -2245,7 +2831,8 @@ window.__ModuleLoader__.load({
           const result = await api('/mail/ai', { method: 'POST', signal: controller.signal, body: { id: selected.id, action, instruction: intent } })
           if (!mounted.current || controller.signal.aborted) return
           setAiMeta(result)
-          if (action === 'read') setSummary(result)
+          if (action === 'translate') { setTranslation(result); setShowTranslation(true) }
+          else if (action === 'read') setSummary(result)
           else if (!draftRef.current.trim()) updateDraft(result.text)
           else setSuggestion(result)
         } catch (failure) {
@@ -2272,7 +2859,15 @@ window.__ModuleLoader__.load({
       const mail = detail || selected
       const aiDisabled = Boolean(aiBusy) || !aiStatus?.available || busy
       return h('article', { className: 'ob-reading-card' },
-        h('h2', { className: 'ob-reading-title' }, selected.subject),
+        h('div', { className: 'ob-reading-heading' },
+          h('h2', { className: 'ob-reading-title' }, showTranslation && translation ? translation.subject : selected.subject),
+          h('button', { type:'button', className:'ob-btn', disabled:translation ? Boolean(aiBusy) : aiDisabled,
+            title:showTranslation ? '切回原始邮件' : '使用已配置的 AI 模型翻译标题和正文为中文',
+            onClick:()=>translation ? setShowTranslation(!showTranslation) : runAi('translate'),
+          }, aiBusy === 'translate' ? '翻译中…' : showTranslation ? '查看原文' : translation ? '查看译文' : '翻译')),
+        aiBusy === 'translate' ? h('div',{className:'ob-inline-hint',role:'status'},'正在翻译邮件…',
+          h('button',{type:'button',className:'ob-command',onClick:()=>request.current?.abort()},'取消')) : null,
+        showTranslation && translation?.truncated ? h('div',{className:'ob-inline-hint',role:'status'},'邮件较长，本次仅翻译正文前 28000 字；查看原文可阅读完整内容。') : null,
         h('div', { className: 'ob-reading-sender' },
           h('span', { className: 'ob-mail-avatar', style: { background: avatarColor(selected.from), color: '#48423d' } }, initial(selected.from)),
           h('div', { className: 'ob-reading-identity' }, h('strong', null, selected.from), h('span', null, selected.fromAddress)),
@@ -2280,7 +2875,7 @@ window.__ModuleLoader__.load({
         h('div', { className: 'ob-reading-date' }, parseDate(selected.receivedAt)?.toLocaleString() || ''),
         detailLoading ? h('div', { className: 'ob-inline-hint', role: 'status' }, '正在加载完整邮件…') : null,
         detailError ? h('div', { className: 'ob-inline-error', role: 'alert' }, `完整正文加载失败：${detailError}。下方为邮件预览。`) : null,
-        h('div', { className: 'ob-reading-content' }, mail.bodyText ?? mail.preview ?? ''),
+        h('div', { className: 'ob-reading-content' }, showTranslation && translation ? translation.text : mail.bodyText ?? mail.preview ?? ''),
         selected.webLink ? h('div', { className: 'ob-reading-links' }, h('a', { href: selected.webLink, target: '_blank', rel: 'noopener noreferrer' }, '在 Outlook 中查看完整邮件')) : null,
         h('div', { className: 'ob-reading-actions ob-mail-assistant-actions' },
           h('button', { type: 'button', className: 'ob-command', disabled: busy, onClick: () => { setOpened(true); setSent(false) } }, h(MailIcon, { name: 'reply' }), '回复'),
@@ -2334,14 +2929,22 @@ window.__ModuleLoader__.load({
     }
 
     function MonthCalendar(props) {
-      const { t, tasks = [], onToggle, busy, surface, listSurface,
+      const { t, tasks = [], onToggle, busy, surface, listSurface, accountMail,
         toolbarSurface, pendingCreate, onPendingCreateConsumed, calendarNonce } = props
       const [cursor, setCursor] = React.useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
       const [data, setData] = React.useState(null)
       const [loading, setLoading] = React.useState(false)
       const [error, setError] = React.useState(null)
       const [hidden, setHidden] = React.useState(() => new Set())
+      const defaultCalendarKey = accountMail ? `outlook:default-create-calendar:${accountMail.toLowerCase()}` : ''
+      const [preferredCalendarId, setPreferredCalendarId] = React.useState(() => {
+        try { return defaultCalendarKey ? window.localStorage.getItem(defaultCalendarKey) || '' : '' }
+        catch { return '' }
+      })
       const [creating, setCreating] = React.useState(null)
+      const editorOpen = React.useRef(false)
+      const refreshAfterEditor = React.useRef(false)
+      editorOpen.current = Boolean(creating)
       const [form, setForm] = React.useState({ subject: '', startTime: '09:00', endTime: '10:00', allDay: false, location: '' })
       const [saving, setSaving] = React.useState(false)
       const [notice, setNotice] = React.useState(null)
@@ -2358,31 +2961,68 @@ window.__ModuleLoader__.load({
       const dragMoved = React.useRef(false)
 
       const load = React.useCallback(async () => {
+        // Keep the editor's calendars and cards stable throughout an editing
+        // session. Drag saves already update their local row immediately.
+        if (editorOpen.current) { refreshAfterEditor.current = true; return }
+        refreshAfterEditor.current = false
         const version = ++requestVersion.current
         setLoading(true)
         try {
           const start = monthGridStart(cursor)
           const end = new Date(start)
           end.setDate(end.getDate() + 42)
-          const result = await api(
-            `/calendar?from=${encodeURIComponent(start.toISOString())}&to=${encodeURIComponent(end.toISOString())}`,
-          )
+          const path = `/calendar?from=${encodeURIComponent(start.toISOString())}&to=${encodeURIComponent(end.toISOString())}`
+          const cacheKey = accountMail ? `${accountMail}:${path}` : ''
+          const revision = calendarRangeRevision
+          const cached = recentCalendarRange
+          if (cacheKey && cached?.key === cacheKey && Date.now() - cached.at < 20_000) {
+            setData(cached.data)
+            setError(null)
+          }
+          const result = await api(path)
           if (version !== requestVersion.current) return
+          if (editorOpen.current) { refreshAfterEditor.current = true; return }
+          if (cacheKey && revision === calendarRangeRevision && !result.warnings?.length) {
+            recentCalendarRange = { key: cacheKey, data: result, at: Date.now() }
+          }
           setData(result)
           setError(null)
         } catch (failure) {
-          if (version === requestVersion.current) setError(failure.message)
+          if (version === requestVersion.current) {
+            if (editorOpen.current) refreshAfterEditor.current = true
+            else setError(failure.message)
+          }
         } finally {
           if (version === requestVersion.current) setLoading(false)
         }
-      }, [cursor])
+      }, [cursor, accountMail])
 
       React.useEffect(() => {
-        load()
+        void load()
         return () => { requestVersion.current += 1 }
-      }, [load])
+      }, [load, calendarNonce])
+
+      React.useEffect(() => {
+        if (!creating && refreshAfterEditor.current) void load()
+      }, [creating, load])
 
       const calendars = data?.calendars ?? []
+      const calendarsById = new Map(calendars.map((calendar) => [calendar.id, calendar]))
+      const preferredCalendar = calendarsById.get(preferredCalendarId)
+      const createCalendar = preferredCalendar && preferredCalendar.canEdit !== false ? preferredCalendar :
+        calendars.find((calendar) => calendar.isDefault && calendar.canEdit !== false) ||
+        calendars.find((calendar) => calendar.canEdit !== false)
+      const defaultCalendarAction = (calendar) => ({
+        label: calendar.id === createCalendar?.id ? '当前默认创建日历' : '设为默认创建日程',
+        icon: 'check',
+        disabled: calendar.canEdit === false || calendar.id === createCalendar?.id,
+        run: () => {
+          if (defaultCalendarKey) window.localStorage.setItem(defaultCalendarKey, calendar.id)
+          setPreferredCalendarId(calendar.id)
+          setNotice(`新建日程默认使用「${calendar.name}」`)
+        },
+      })
+      const eventColor = (event) => calendarsById.get(event.calendarId)?.color || event.color || '#0f6cbd'
       const events = (data?.events ?? []).filter((event) => !hidden.has(event.calendarId))
       const byDay = new Map()
       for (const event of events) {
@@ -2444,25 +3084,32 @@ window.__ModuleLoader__.load({
             } }), label)),
         closedGroups[key] ? null : items.map((calendar) => h('label', { className: 'ob-calendar-choice', key: calendar.id, onContextMenu: (event) => openContextMenu(event, [
           { label: '在此日历新建活动', disabled: calendar.canEdit === false, run: () => openCreate(selectedDay, { calendarId: calendar.id }) },
+          defaultCalendarAction(calendar),
           { label: hidden.has(calendar.id) ? '显示日历' : '隐藏日历', run: () => toggleCalendar(calendar.id) },
           { label: '只显示此日历', run: () => setHidden(new Set(calendars.filter((item) => item.id !== calendar.id).map((item) => item.id))) },
           { label: '显示全部日历', run: () => setHidden(new Set()) },
         ]) },
           h('input', { type: 'checkbox', checked: !hidden.has(calendar.id), style: { accentColor: calendar.color }, onChange: () => toggleCalendar(calendar.id) }),
-          h('span', { title: calendar.name }, calendar.name))))
+          h('span', { title: calendar.id === createCalendar?.id ? `${calendar.name}（默认创建日历）` : calendar.name }, calendar.name))))
 
       const openCreate = (day, overrides = {}) => {
-        setForm({ subject: '', date: dayKey(day), endDate: dayKey(day), startTime: '09:00', endTime: '09:30', allDay: false,
+        const date = dayKey(day)
+        const autoTime = !overrides.allDay && !overrides.startTime && !overrides.endTime
+        const { hour, minute } = shanghaiTodayParts()
+        const slot = autoTime
+          ? eventSlotFields(calendarTimestamp(`${date}T${hour}:${minute}:00`) + EVENT_BUFFER_MS)
+          : { date, endDate: date, startTime: '09:00', endTime: '09:30' }
+        setForm({ subject: '', ...slot, allDay: false,
           location: '', attendees: '', body: '', showAs: 'busy', reminder: '15',
-          calendarId: calendars.find((item) => item.isDefault && item.canEdit !== false)?.id || calendars.find((item) => item.canEdit !== false)?.id || '',
+          calendarId: createCalendar?.id || '',
           eventId: '', listEventId: '',
           transactionId: window.crypto?.randomUUID?.() || `event-${Date.now()}-${Math.random().toString(16).slice(2)}`, ...overrides })
         setCreateError(null)
-        setCreating(day)
+        setCreating({ autoTime })
       }
 
       React.useEffect(() => {
-        if (!pendingCreate) return
+        if (!pendingCreate || (!data && !error)) return
         const day = parseDate(`${pendingCreate.date || dayKey(new Date())}T12:00:00`) || new Date()
         openCreate(day, {
           subject: pendingCreate.subject || '',
@@ -2475,12 +3122,7 @@ window.__ModuleLoader__.load({
           body: pendingCreate.body || '',
         })
         onPendingCreateConsumed?.()
-      }, [pendingCreate])
-
-      React.useEffect(() => {
-        if (!calendarNonce) return
-        load()
-      }, [calendarNonce, load])
+      }, [pendingCreate, data, error])
 
 
       const dateContext = (event, day) => openContextMenu(event, [
@@ -2497,19 +3139,26 @@ window.__ModuleLoader__.load({
         { label: '编辑日程', icon: 'edit', disabled: calendars.find((calendar) => calendar.id === item.calendarId)?.canEdit === false, run: () => openEdit(item) },
         { label: '复制日程标题', icon: 'notes', run: () => copyOutlookText(item.subject) },
         item.webLink ? { label: '在 Outlook 中打开', run: () => window.open(item.webLink, '_blank', 'noopener,noreferrer') } : null,
+        { separator: true },
+        { label: '删除日程', icon: 'trash', danger: true, disabled: saving || savingRequest.current || !eventCanEdit(item), run: () => deletePeekEvent(item, true) },
       ])
       const openEdit = async (item) => {
         const realId = String(item.id).includes(':') ? String(item.id).slice(String(item.id).indexOf(':') + 1) : String(item.id)
         const day = parseDate(item.start) || new Date()
         setCreateError(null)
         try {
-          const detail = await api(`/calendar/event?id=${encodeURIComponent(realId)}`)
+          const params = new URLSearchParams({ id: realId, calendarId: item.calendarId || '' })
+          const detail = await api(`/calendar/event?${params}`)
           const startDate = parseDate(detail.event.start) || day
           const endDate = parseDate(detail.event.end) || startDate
+          const sourceCalendarId = detail.event.calendarId || item.calendarId || ''
+          const sourceCalendar = calendarsById.get(sourceCalendarId) || {
+            id: sourceCalendarId, name: item.calendar, color: item.color, canEdit: false,
+          }
           setForm({
             subject: detail.event.subject || '',
             date: dayKey(startDate),
-            endDate: dayKey(endDate),
+            endDate: detail.event.allDay && endDate > startDate ? addDaysYmd(dayKey(endDate), -1) : dayKey(endDate),
             startTime: fmtTime(startDate),
             endTime: fmtTime(endDate),
             allDay: Boolean(detail.event.allDay),
@@ -2518,12 +3167,14 @@ window.__ModuleLoader__.load({
             body: htmlToPlainText(detail.event.body || ''),
             showAs: detail.event.showAs || 'busy',
             reminder: String(detail.event.reminder ?? '15'),
-            calendarId: detail.event.calendarId || item.calendarId || '',
+            calendarId: sourceCalendarId,
+            sourceCalendarId,
+            sourceCalendar,
             eventId: detail.event.id || realId,
             listEventId: item.id,
             transactionId: window.crypto?.randomUUID?.() || `event-${Date.now()}`,
           })
-          setCreating(startDate)
+          setCreating({ autoTime: false })
         } catch (failure) {
           setCreateError(failure.message)
         }
@@ -2547,15 +3198,41 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const submitCreate = async () => {
+      const submitCreate = async ({ saveCurrent = true } = {}) => {
         if (!creating || savingRequest.current) return
         savingRequest.current = true
         setSaving(true)
         setCreateError(null)
         try {
-          await api(form.eventId ? '/calendar/update' : '/calendar/create', { method: 'POST', body: form })
+          const moving = Boolean(saveCurrent && form.eventId && form.sourceCalendarId !== form.calendarId)
+          if (moving) {
+            let capabilities
+            try { capabilities = await api('/calendar/capabilities') } catch {}
+            if (capabilities?.verifiedTransfer !== 1) {
+              throw new Error('日历后台版本尚未更新，请完全退出并重新打开 DeepSeek 后再转移。此次没有提交保存。')
+            }
+          }
+          // Timeline adjustments are local until this explicit Save. Remove each
+          // confirmed update so retrying a partial failure does not replay it.
+          for (const row of Object.values(form.timelineChanges || {})) {
+            await api('/calendar/update', { method: 'POST', body: {
+              eventId: String(row.id).slice(String(row.id).indexOf(':') + 1),
+              subject: row.subject || '(无主题)', calendarId: row.calendarId,
+              date: row.start.slice(0, 10), startTime: row.start.slice(11, 16),
+              endDate: row.end.slice(0, 10), endTime: row.end.slice(11, 16),
+              datesOnly: true, allDay: false,
+            } })
+            refreshAfterEditor.current = true
+            setForm((old) => { const changes = { ...old.timelineChanges }; delete changes[row.id]; return { ...old, timelineChanges: changes, timelineSaved: { ...old.timelineSaved, [row.id]: row } } })
+          }
+          const result = saveCurrent
+            ? await api(form.eventId ? '/calendar/update' : '/calendar/create', { method: 'POST', body: form })
+            : { updated: true }
+          if (moving && (!result.moved || result.calendarId !== form.calendarId)) {
+            throw new Error('未收到目标日历的转移确认，请刷新日历核对；本次不能确认转移成功。')
+          }
           setCreating(null)
-          setNotice(form.eventId ? '日程已更新' : t('cal.created'))
+          setNotice(result.moved ? '日程已移到所选日历' : !saveCurrent || form.eventId ? '日程已更新' : t('cal.created'))
           const savedDay = new Date(`${form.date}T12:00:00`)
           setSelectedDay(savedDay)
           if (savedDay.getMonth() !== cursor.getMonth() || savedDay.getFullYear() !== cursor.getFullYear()) {
@@ -2591,12 +3268,17 @@ window.__ModuleLoader__.load({
         setEventPeek(null)
         setDayPeek({ day, ...placePeek(rect) })
       }
-      const scheduleEventClick = (item, day, anchorEl) => {
+      const scheduleEventClick = (item, day, anchorEl, delay = 220) => {
         if (eventClickTimer.current) clearTimeout(eventClickTimer.current)
         eventClickTimer.current = setTimeout(() => {
           eventClickTimer.current = null
           openEventPeek(item, day, anchorEl)
-        }, 220)
+        }, delay)
+      }
+      const closeDayPeek = () => {
+        if (eventClickTimer.current) clearTimeout(eventClickTimer.current)
+        eventClickTimer.current = null
+        setDayPeek(null)
       }
       const handleEventDoubleClick = (item) => {
         if (eventClickTimer.current) {
@@ -2607,7 +3289,7 @@ window.__ModuleLoader__.load({
         setDayPeek(null)
         openEdit(item)
       }
-      const deletePeekEvent = async (item) => {
+      const deletePeekEvent = async (item, fromMenu = false) => {
         if (!item || savingRequest.current) return
         if (!eventCanEdit(item)) {
           setNotice('此日历为只读，无法删除日程')
@@ -2617,10 +3299,13 @@ window.__ModuleLoader__.load({
         savingRequest.current = true
         try {
           await api('/calendar/delete', { method: 'POST', body: { id: realEventId(item) } })
+          setData((previous) => previous ? { ...previous, events: (previous.events ?? []).filter((event) => event.id !== item.id) } : previous)
           setEventPeek(null)
           setNotice('日程已删除')
           await load()
+          return true
         } catch (failure) {
+          if (fromMenu) throw new Error(`删除失败：${failure.message}`)
           setNotice(`删除失败：${failure.message}`)
         } finally {
           savingRequest.current = false
@@ -2791,8 +3476,9 @@ window.__ModuleLoader__.load({
                       },
                       onDragEnd: () => { setDragState(null) },
                       onContextMenu: (mouse) => eventContext(mouse, event, day),
-                      style: { borderLeftColor: event.color || '#0f6cbd', background: `color-mix(in srgb, ${event.color || '#0f6cbd'} 24%, var(--ob-paper))` },
-                      title: `${event.subject}${event.location ? ` · ${event.location}` : ''}${editable ? '（拖到其他日期可移动）' : ''}`,
+                      style: { '--ob-event-color': eventColor(event) },
+                      title: [event.subject, calendarsById.get(event.calendarId)?.name || event.calendar, event.location].filter(Boolean).join(' · ') +
+                        (editable ? '（拖到其他日期可移动）' : ''),
                       onClick: (e) => {
                         e.stopPropagation()
                         if (dragMoved.current) { dragMoved.current = false; return }
@@ -2811,10 +3497,7 @@ window.__ModuleLoader__.load({
                     ? h('button', {
                         type: 'button', key: `preview:${dragState.event.id}`, className: 'ob-calendar-event drag-preview',
                         tabIndex: -1,
-                        style: {
-                          borderLeftColor: dragState.event.color || '#0f6cbd',
-                          background: `color-mix(in srgb, ${dragState.event.color || '#0f6cbd'} 24%, var(--ob-paper))`,
-                        },
+                        style: { '--ob-event-color': eventColor(dragState.event) },
                       }, dragState.event.allDay ? dragState.event.subject : `${fmtTime(parseDate(dragState.event.start))} ${dragState.event.subject}`)
                     : null,
                   dayEvents.length > 2 ? h('button', { type: 'button', className: 'ob-calendar-more', onDoubleClick: (e) => e.stopPropagation(),
@@ -2835,12 +3518,13 @@ window.__ModuleLoader__.load({
               'aria-label': '日程详情',
               style: { left: eventPeek.left, top: eventPeek.top },
               onClick: (e) => e.stopPropagation(),
+              onContextMenu: (event) => eventContext(event, eventPeek.item, eventPeek.day),
             },
-              h('div', { className: 'ob-event-peek-accent', style: { background: eventPeek.item.color || '#13a10e' } }),
+              h('div', { className: 'ob-event-peek-accent', style: { background: eventColor(eventPeek.item) } }),
               h('div', { className: 'ob-event-peek-body' },
                 h('div', { className: 'ob-event-peek-cat' },
-                  h('span', { className: 'ob-event-peek-dot', style: { background: eventPeek.item.color || '#13a10e' } }),
-                  h('span', null, eventPeek.item.calendar || '日历')),
+                  h('span', { className: 'ob-event-peek-dot', style: { background: eventColor(eventPeek.item) } }),
+                  h('span', null, calendarsById.get(eventPeek.item.calendarId)?.name || eventPeek.item.calendar || '日历')),
                 h('h3', { className: 'ob-event-peek-title' }, eventPeek.item.subject || '(无主题)'),
                 h('div', { className: 'ob-event-peek-row' },
                   h(MailIcon, { name: 'clock', size: 16 }),
@@ -2873,7 +3557,7 @@ window.__ModuleLoader__.load({
         dayPeek ? h(Overlay, null,
           h('div', {
             style: { position: 'fixed', inset: 0, zIndex: 1090 },
-            onClick: () => setDayPeek(null),
+            onClick: closeDayPeek,
           },
             h('div', {
               className: 'ob-day-peek',
@@ -2884,20 +3568,24 @@ window.__ModuleLoader__.load({
             },
               h('div', { className: 'ob-day-peek-head' },
                 `${dayPeek.day.getMonth()+1} 月 ${dayPeek.day.getDate()} 日`,
-                h('button', { type: 'button', className: 'ob-btn', onClick: () => setDayPeek(null) }, t('action.close'))),
+                h('button', { type: 'button', className: 'ob-btn', onClick: closeDayPeek }, t('action.close'))),
               (byDay.get(dayKey(dayPeek.day)) ?? []).map((event) => h('button', {
                 type: 'button',
                 key: event.id,
                 className: 'ob-day-peek-item',
-                style: { borderLeftColor: event.color || '#0f6cbd' },
-                onClick: (e) => { openEventPeek(event, dayPeek.day, e.currentTarget); setDayPeek(null) },
-                onDoubleClick: (e) => { e.preventDefault(); setDayPeek(null); handleEventDoubleClick(event) },
-                onContextMenu: (mouse) => eventContext(mouse, event, dayPeek.day),
+                style: { borderLeftColor: eventColor(event), '--ob-event-color': eventColor(event) },
+                onClick: (e) => { e.stopPropagation(); scheduleEventClick(event, dayPeek.day, e.currentTarget, 500) },
+                onDoubleClick: (e) => { e.preventDefault(); e.stopPropagation(); handleEventDoubleClick(event) },
+                onContextMenu: (mouse) => {
+                  if (eventClickTimer.current) clearTimeout(eventClickTimer.current)
+                  eventClickTimer.current = null
+                  eventContext(mouse, event, dayPeek.day)
+                },
               },
                 h('strong', null, event.subject),
                 h('span', null, event.allDay ? '全天' : `${fmtTime(parseDate(event.start))} – ${fmtTime(parseDate(event.end))}`)))))
         ) : null,
-        creating ? h(EventEditor, { form, setForm, calendars, saving, error: createError, onSave: submitCreate, onDelete: removeEvent, onClose: () => { if (!saving) setCreating(null) } }) : null,
+        creating ? h(EventEditor, { key: form.transactionId, form, setForm, calendars, saving, error: createError, onSave: submitCreate, onDelete: removeEvent, onDeleteTimelineEvent: deletePeekEvent, onTimelineChange: load, autoTime: creating.autoTime, defaultCalendarAction, onClose: () => { if (!saving) setCreating(null) } }) : null,
       )
     }
 
@@ -3112,7 +3800,7 @@ window.__ModuleLoader__.load({
         draggable: canDrag && !task.completed,
         onDragStart: (event) => task.completed ? event.preventDefault() : onStartDrag(event, task, sourceKey, sourceCategory),
         onDragEnd: onEndDrag,
-        onContextMenu: (event) => onContextTask(event, task),
+        onContextMenu: (event) => onContextTask(event, task, sourceKey),
       },
         h('input', {
           type: 'checkbox', checked: Boolean(task.completed),
@@ -3128,14 +3816,14 @@ window.__ModuleLoader__.load({
         canDrag && !task.completed ? h('span', { className: 'ob-plan-grip', 'aria-hidden': true }, '⠿') : null))
     }
 
-    function TodoPanel({ label, count, empty, overdue, target, headerControl, surface, children }) {
+    function TodoPanel({ label, count, empty, overdue, target, headerControl, surface, addEvents, children }) {
       return h('section', {
         className: `ob-card ob-plan-panel${overdue ? ' ob-plan-overdue' : ''}${target?.preview ? ' ob-plan-drop-hot' : ''}`,
-        'aria-label': label, style: surface, ...target?.events,
+        'aria-label': label, style: surface, ...target?.events, ...addEvents,
       },
         h('div', { className: 'ob-card-head' }, h('h3', null, label), headerControl, h('span', { className: 'ob-count' }, count)),
         target?.preview,
-        h('div', { className: 'ob-list' }, children ?? (target?.preview ? null : h('div', { className: 'ob-empty' }, empty))))
+        h('div', { className: 'ob-list' }, children ?? (target?.preview ? null : h('div', { className: 'ob-empty ob-plan-empty' }, empty))))
     }
 
     function TodoPage({ t, lists, tasks, error, stale, connected, busy, onCreate, onToggle, onMove, onDelete, onRefresh, completedSort, onCompletedSort, surfaceOf }) {
@@ -3146,7 +3834,30 @@ window.__ModuleLoader__.load({
       const [dragged, setDragged] = React.useState(null)
       const [hover, setHover] = React.useState('')
       const dragRef = React.useRef(null)
+      const [quickAdd, setQuickAdd] = React.useState(null)
+      const [quickTitle, setQuickTitle] = React.useState('')
+      const quickSubmitting = React.useRef(false)
+      const quickField = React.useRef(null)
+      React.useLayoutEffect(() => {
+        const field = quickField.current
+        if (!quickAdd || !field) return
+        const resize = () => {
+          field.style.height = '0px'
+          const contentHeight = field.scrollHeight
+          const height = Math.max(46, Math.min(contentHeight, window.innerHeight - 18))
+          field.style.height = `${height}px`
+          field.style.overflowY = contentHeight > height ? 'auto' : 'hidden'
+          const box = field.form
+          box.style.top = `${Math.max(8, Math.min(quickAdd.top, window.innerHeight - box.offsetHeight - 8))}px`
+          box.style.left = `${Math.max(8, Math.min(quickAdd.left, window.innerWidth - box.offsetWidth - 8))}px`
+        }
+        resize()
+        window.addEventListener('resize', resize)
+        return () => window.removeEventListener('resize', resize)
+      }, [quickAdd, quickTitle])
       const selectedList = listId ? lists.find((list) => list.id === listId) : lists[0]
+      const defaultTaskList = lists.find((list) => list.isDefault) || lists.find((list) => /^(任务|Tasks)$/i.test(list.name))
+      const canQuickAdd = connected && !busy && Boolean(defaultTaskList)
       const canAdd = connected && Boolean(selectedList) && !busy
       const canDrag = connected && !busy
       const now = new Date()
@@ -3158,6 +3869,28 @@ window.__ModuleLoader__.load({
         if (draftPlan.dueDate) setTitle(draftPlan.title)
         setDueDate(date)
       }
+      const quickAddDates = new Map([['all', ''], ['today', today], ['tomorrow', tomorrow]])
+      const prepareQuickAdd = (key, x, y) => {
+        if (!canQuickAdd || !quickAddDates.has(key) || quickSubmitting.current) return
+        setQuickTitle('')
+        setQuickAdd({
+          date: quickAddDates.get(key),
+          hint: key === 'today' ? '添加计划到今天' : key === 'tomorrow' ? '添加计划到明天' : '添加计划到所有项目',
+          left: Math.max(8, Math.min(x, window.innerWidth - 318)),
+          top: Math.max(8, Math.min(y, window.innerHeight - 56)),
+        })
+      }
+      const quickAddItem = (key, { clientX, clientY }) => ({
+        label: t('todo.add'), icon: 'compose', disabled: !canQuickAdd, run: () => prepareQuickAdd(key, clientX, clientY),
+      })
+      const quickAddEvents = (key) => ({
+        onDoubleClick: (event) => {
+          if (!event.target.closest('.ob-todo,button,input,select')) prepareQuickAdd(key, event.clientX, event.clientY)
+        },
+        onContextMenu: (event) => {
+          if (!event.target.closest('.ob-todo,button,input,select')) openContextMenu(event, [quickAddItem(key, event)])
+        },
+      })
       const groups = groupPlanTasks(tasks, now, completedSort)
       const categoryNames = [...groups.categories.keys()].filter(Boolean).sort((a, b) => a.localeCompare(b))
       const categoryName = categoryNames.find((name) => categoryFilter === `category:${name}`)
@@ -3167,13 +3900,14 @@ window.__ModuleLoader__.load({
       const categoryTasks = categoryList
         ? groups.all.filter((task) => task.listId === categoryList.id)
         : showOverdue ? groups.overdue : groups.categories.get(categoryName)
-      const onContextTask = (event, task) => {
+      const onContextTask = (event, task, sourceKey) => {
         const currentDue = task.due?.slice(0, 10) ?? null
         const setDue = (label, dueDate) => ({
           label, icon: 'calendar', disabled: !canDrag || currentDue === dueDate,
           run: () => onMove(task, { dueDate }),
         })
         openContextMenu(event, [
+          ...(quickAddDates.has(sourceKey) ? [quickAddItem(sourceKey, event), { separator: true }] : []),
           {
             label: t(task.completed ? 'todo.menuRestore' : 'todo.menuComplete'),
             icon: task.completed ? 'reply' : 'check', disabled: !canDrag,
@@ -3187,10 +3921,8 @@ window.__ModuleLoader__.load({
           ] : []),
           { separator: true },
           { label: t('todo.menuCopyTitle'), icon: 'notes', run: () => copyOutlookText(task.title) },
-          ...(lists.some((list) => list.id === task.listId && list.canDeleteTasks) ? [
-            { separator: true },
-            { label: t('todo.menuDelete'), icon: 'trash', danger: true, disabled: !canDrag, run: () => onDelete(task) },
-          ] : []),
+          { separator: true },
+          { label: t('todo.menuDelete'), icon: 'trash', danger: true, disabled: !canDrag || !lists.some((list) => list.id === task.listId && list.canDeleteTasks), run: () => onDelete(task) },
         ])
       }
       const endDrag = () => {
@@ -3243,6 +3975,7 @@ window.__ModuleLoader__.load({
       }) : null
       const panel = (label, items, key, date, region) => h(TodoPanel, {
         label: t(label), count: items.length, empty: t('todo.empty'), target: dateTarget(key, date), surface: surfaceOf(region),
+        addEvents: quickAddEvents(key),
       }, rows(items, key))
       return h('section', { className: 'ob-todo-page', 'aria-label': t('todo.title') },
         error ? h('div', { className: 'ob-error ob-plan-sync-error', role: 'alert' },
@@ -3321,7 +4054,40 @@ window.__ModuleLoader__.load({
               rows(groups.completed, 'completed'))),
           panel('todo.all', groups.all, 'all', null, 'todoAll'),
           panel('calendar.today', groups.today, 'today', today, 'todoToday'),
-          panel('calendar.tomorrow', groups.tomorrow, 'tomorrow', tomorrow, 'todoTomorrow')))
+          panel('calendar.tomorrow', groups.tomorrow, 'tomorrow', tomorrow, 'todoTomorrow')),
+        quickAdd ? h(Overlay, null,
+          h('div', { className: 'ob-plan-quick-add-layer', onPointerDown: (event) => {
+            if (event.target === event.currentTarget && !quickSubmitting.current) setQuickAdd(null)
+          } }, h('form', {
+            className: 'ob-plan-quick-add', style: { left: quickAdd.left, top: quickAdd.top },
+            'aria-label': quickAdd.hint,
+            onSubmit: async (event) => {
+              event.preventDefault()
+              const name = quickTitle.trim()
+              if (!name || !canQuickAdd || quickSubmitting.current) return
+              quickSubmitting.current = true
+              try {
+                if (await onCreate(defaultTaskList, name, quickAdd.date)) setQuickAdd(null)
+              } finally { quickSubmitting.current = false }
+            },
+          }, h('textarea', {
+            ref: quickField, rows: 1, autoFocus: true, maxLength: 255, value: quickTitle, readOnly: busy,
+            'aria-label': quickAdd.hint, placeholder: quickAdd.hint,
+            onChange: (event) => setQuickTitle(event.target.value),
+            onKeyDown: (event) => {
+              if (event.nativeEvent?.isComposing || event.keyCode === 229) return
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                event.currentTarget.form.requestSubmit()
+                return
+              }
+              if (event.key === 'Escape' && !quickSubmitting.current) {
+                event.preventDefault()
+                event.stopPropagation()
+                setQuickAdd(null)
+              }
+            },
+          })))) : null)
     }
 
     /* ------------------------------------------------------ connect views */
@@ -3409,7 +4175,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function SetupGuide({ t, connected, busy, onOpenEntra, onSettings, onConnect, onClose }) {
+    function SetupGuide({ t, version, connected, busy, onOpenEntra, onSettings, onConnect, onClose }) {
       const entraUrl = 'https://entra.microsoft.com/'
       const steps = [
         ['register', h('a', { className: 'ob-btn', href: entraUrl, target: '_blank', rel: 'noopener noreferrer',
@@ -3424,7 +4190,8 @@ window.__ModuleLoader__.load({
         h('section', { className: 'ob-modal ob-guide-dialog', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'ob-guide-title',
           onKeyDown: (event) => { if (event.key === 'Escape') onClose() } },
           h('header', { className: 'ob-modal-head' },
-            h('span', { id: 'ob-guide-title' }, t('guide.title')),
+            h('div', null, h('span', { id: 'ob-guide-title' }, t('guide.title')),
+              version ? h('span', { className: 'ob-guide-version' }, `${t('guide.version')} v${version}`) : null),
             h('button', { type: 'button', className: 'ob-btn', autoFocus: true, onClick: onClose }, t('action.close'))),
           h('div', { className: 'ob-guide-body' },
             h('p', null, t('guide.intro')),
@@ -3510,6 +4277,7 @@ window.__ModuleLoader__.load({
       const [readAllFeedback, setReadAllFeedback] = React.useState(null)
       const activeFolder = React.useRef(folder)
       activeFolder.current = folder
+      const folderLoads = React.useRef(new Map())
       const [folders, setFolders] = React.useState([])
       const [folderMail, setFolderMail] = React.useState(null)
       const [compose, setCompose] = React.useState(null)
@@ -3766,13 +4534,16 @@ window.__ModuleLoader__.load({
       }, [])
 
       const loadFolderMail = React.useCallback(async (key) => {
+        const request = Symbol()
+        folderLoads.current.set(key, request)
+        const isCurrent = () => activeFolder.current === key && folderLoads.current.get(key) === request
         try {
           const result = await api(`/mail?folder=${encodeURIComponent(key)}`)
           const rows = result.mail ?? []
-          if (activeFolder.current === key) setFolderMail(rows)
+          if (isCurrent()) setFolderMail(rows)
           return rows
         } catch (failure) {
-          setError(failure.message)
+          if (isCurrent()) setError(failure.message)
         }
       }, [])
 
@@ -3786,23 +4557,34 @@ window.__ModuleLoader__.load({
 
       const afterMailAction = React.useCallback(async () => {
         setSelected(null)
-        await loadFolderMail(folder)
+        await loadFolderMail(activeFolder.current)
         await loadFolders()
         store.load(true)
-      }, [folder, loadFolderMail, loadFolders])
+      }, [loadFolderMail, loadFolders])
+
+      const selectMailFolder = (key) => {
+        if (key !== folder) {
+          setFolder(key)
+          setFolderMail(null)
+        }
+        setSelected(null)
+        setFocus(key === 'inbox' ? 'focused' : 'all')
+        setCategory('all')
+        if (key === 'deleteditems') setFilter('all')
+      }
 
       const deleteMail = React.useCallback(async (row) => {
         if (!row) return
         setBusy(true)
         try {
-          await api('/mail/delete', { method: 'POST', body: { id: row.id } })
+          await api('/mail/delete', { method: 'POST', body: { id: row.id, folder } })
           await afterMailAction()
         } catch (failure) {
           setError(failure.message)
         } finally {
           setBusy(false)
         }
-      }, [afterMailAction])
+      }, [afterMailAction, folder])
 
       const archiveMail = React.useCallback(async (row) => {
         if (!row) return
@@ -4193,6 +4975,8 @@ window.__ModuleLoader__.load({
             : view === 'calendar'
             ? h(MonthCalendar, {
                 t,
+                key: snap.account?.mail || '',
+                accountMail: snap.account?.mail,
                 tasks: (snap.tasks ?? []).filter((task) => !task.completed),
                 onToggle: toggleTask,
                 busy,
@@ -4207,19 +4991,22 @@ window.__ModuleLoader__.load({
                   t, selected, busy, connected, folders, folder, filter, setFilter, focus, setFocus, category, setCategory,
                   account: snap.account?.mail || snap.account?.displayName || 'Outlook',
                   rows: folderMail ?? (folder === 'inbox' ? snap.mail ?? [] : []), unread: Number(snap.unread || 0),
-                  onFolder: (key) => { setFolder(key); setSelected(null); setFolderMail(null); setFocus(key === 'inbox' ? 'focused' : 'all'); setCategory('all') },
+                  onFolder: selectMailFolder,
                   onSelect: (row) => { setSelected(row); if (row && !row.isRead && !busy) markRead(row) },
                   onCompose: () => setCompose({ to: '', subject: '', body: '' }),
                   onDelete: deleteMail, onArchive: archiveMail, onToggleRead: toggleRead,
                   onMarkFolderRead: markAllRead, readAllFeedback,
                   onReplyRow: (row) => { setSelected(row); setReplyRequest({ id: row.id, at: Date.now() }) },
                   replyRequest, onSendReply: sendReply,
-                  onRefreshFolder: async (key) => { setFolder(key); setSelected(null); setFocus(key === 'inbox' ? 'focused' : 'all'); await loadFolderMail(key); await loadFolders() },
+                  onRefreshFolder: async (key) => {
+                    selectMailFolder(key)
+                    if (key === folder) await loadFolderMail(key)
+                    await loadFolders()
+                  },
                   surface: surfaceOf('mail'),
                   toolbarSurface: surfaceOf('mailToolbar'),
                   folderSurface: surfaceOf('mailFolders'),
                   readingSurface: surfaceOf('mailReading'),
-                  timeOf: (row) => fmtMailTime(parseDate(row.receivedAt), t),
                 }),
           (snap.warnings ?? []).length > 0
             ? h('div', { className: 'ob-body-feedback' },
@@ -4408,7 +5195,7 @@ window.__ModuleLoader__.load({
             )
           : null,
         showGuide ? h(SetupGuide, {
-          t, connected, busy: busy || showSettings, onOpenEntra: openInApp,
+          t, version: snap?.pluginVersion, connected, busy: busy || showSettings, onOpenEntra: openInApp,
           onSettings: () => { setShowGuide(false); if (!showSettings) openSettings() },
           onConnect: () => { setShowGuide(false); startConnect() },
           onClose: () => setShowGuide(false),
