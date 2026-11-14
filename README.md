@@ -2,7 +2,7 @@
 
 在 DeepSeek Harness 侧栏打开 Outlook，集中处理邮件、管理日历和查看 Microsoft To Do 计划。顶部 AI 输入栏可以帮你创建计划、安排日程或起草邮件。
 
-[v0.4.0 发布页](https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/tag/v0.4.0) · [功能介绍](#功能介绍) · [本次更新](#本次更新) · [安装](#安装) · [连接账户](#连接-outlook-账户) · [使用方法](#使用方法)
+[v0.4.1 发布页](https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/tag/v0.4.1) · [功能介绍](#功能介绍) · [本次更新](#本次更新) · [安装](#安装) · [连接账户](#连接-outlook-账户) · [使用方法](#使用方法)
 
 ## 功能介绍
 
@@ -16,7 +16,7 @@
 
 ## 本次更新
 
-以下功能已包含在 v0.4.0 安装包中。
+v0.4.1 改进了 Outlook 登录与同步。首次打开插件时会弹出流程指引。授权时，指引和 Microsoft 登录页在 Outlook 面板内并排显示。邮件、日历和计划按需读取，邮件读取遇到临时网关错误时会重试。
 
 | 更新 | 可以做什么 |
 | --- | --- |
@@ -37,31 +37,25 @@
 2. 将下面的 GitHub Release 安装包地址粘贴到 **包名或地址**，然后点 **安装**。
 
    ```text
-   https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/download/v0.4.0/dsh-outlook-bridge-0.4.0.tgz
+   https://github.com/HuiHui-Small/dsh-outlook-bridge/releases/download/v0.4.1/dsh-outlook-bridge-0.4.1.tgz
    ```
 
 3. 安装完成后点 **立即启用**，再从左侧栏进入 **Outlook**。如果 Harness 提示重启，退出并重新打开应用。
 
 ## 连接 Outlook 账户
 
-使用个人 Outlook.com 或 Hotmail 邮箱时，建议先按下文注册自己的 Microsoft Entra 应用。工作或学校账户的授权取决于组织的 Microsoft 365 策略。
+首次打开 Outlook 插件时会自动弹出流程指引。之后可从顶部 **流程指引** 重新打开。新授权需要填写你自己的 Microsoft Entra 应用客户端 ID。
 
-1. 在 Outlook 面板点击 **连接 Outlook**，按提示生成设备代码并打开微软登录页。
-2. 在微软页面输入设备代码，登录并同意授权。返回 Harness，等待面板加载你的邮箱。
-3. 如果选择网页授权方式，登录后按面板提示复制浏览器跳转后的完整地址，粘贴到插件里，再点 **完成登录**。
+1. 在 Entra ID 左侧打开 **应用注册**，再点 **新注册**。推荐选择 **任何 Entra ID 租户 + 个人 Microsoft 帐户**。注册后回到 **应用注册**，切换到 **所有应用程序**，复制应用所在行的 **应用程序（客户端）ID**。 [Microsoft Entra 管理中心](https://entra.microsoft.com/)
+2. 在 **所有应用程序** 点击应用名称，进入 **身份验证（预览版） / Authentication (Preview)**，在 **设置** 中开启 **允许公共客户端流** 并保存。如果页面显示 **身份验证**，在 **高级设置** 中查找。
+3. 在插件 **设置** 粘贴客户端 ID，客户端密钥留空。使用推荐帐户类型时，租户填 `common`。仅限个人帐户填 `consumers`，单租户应用填目录（租户）ID。保存设置。
+4. 在 Outlook 面板点 **连接 Outlook**，在嵌入式微软登录页输入设备代码，登录并同意授权。设备代码可在插件里复制。如果选择已登录帐号或 Windows Hello 后跳到错误页，选择 **使用另一个帐户** 并手动输入登录信息。组织账户可能需要管理员批准。 [Microsoft 设备代码登录文档](https://learn.microsoft.com/zh-cn/entra/identity-platform/v2-oauth2-device-code)
 
-### 配置自己的 Microsoft Entra 应用
-
-点击 Outlook 顶部的 **流程指引**，可以查看以下步骤和当前插件版本。
-
-1. 在 [Microsoft Entra 管理中心](https://entra.microsoft.com/) 打开 **应用注册 → 新注册**，选择支持你的 Microsoft 账户类型。个人邮箱请选择包含个人 Microsoft 账户的选项。
-2. 复制应用的 **应用程序（客户端）ID**。进入该应用的详情，在 **管理 → 身份验证（预览版） / Authentication (Preview) → 设置** 中启用 **允许公共客户端流**。如果页面名称是 **身份验证**，在 **高级设置** 中查找。若使用网页授权，在 **移动和桌面应用程序** 平台注册重定向 URI `https://login.microsoftonline.com/common/oauth2/nativeclient`。
-3. 打开插件的 **Outlook → 设置**，填入客户端 ID。仅支持个人账户的应用，租户可填 `consumers`。同时支持组织和个人账户时可填 `common`。单租户组织应用请填对应的租户 ID。
-4. 保存设置后重新连接。组织要求管理员同意时，请由租户管理员处理。可参阅 [Microsoft 设备代码登录文档](https://learn.microsoft.com/zh-cn/entra/identity-platform/v2-oauth2-device-code)。
+也可在 Entra 应用的 **身份验证** 中为 **移动和桌面应用程序** 登记重定向 URI `http://localhost`，再点插件里的 **在内置浏览器登录**。插件会自动接收授权结果。
 
 ## 使用方法
 
-以下说明适用于 v0.4.0。
+以下说明适用于 v0.4.1。
 
 [邮件](#邮件) · [日历](#日历) · [计划](#计划) · [顶部 AI 输入栏](#顶部-ai-输入栏) · [界面设置](#界面设置) · [欢迎页天气](#欢迎页天气)
 
@@ -135,6 +129,7 @@
 ## 权限与数据
 
 - 邮件、日程和计划通过 Microsoft Graph 访问。插件请求用于资料读取、邮件读写和发送、日历读写以及 Microsoft To Do 的委托权限，并用 `offline_access` 维持登录。连接设置和令牌保存在本机 Harness 的插件数据目录。
+- `Mail.Send` 仅在你主动点击「发送邮件」或「发送回复」时使用。AI 写邮件和 AI 快速回复只生成可编辑草稿，发出前由你核对并点击发送。
 - 主动使用 AI 功能时，相关邮件内容或输入的指令会发给 Harness 配置的模型服务。
 - 天气由 [Open-Meteo](https://open-meteo.com/) 提供。使用设备定位时，经纬度用于查询天气，并通过 [BigDataCloud](https://www.bigdatacloud.com/geocoding-apis/free-reverse-geocode-to-city-api) 解析地点名称。
 

@@ -116,18 +116,18 @@ window.__ModuleLoader__.load({
         'settings.title': '连接设置',
         'settings.clientId': 'Microsoft 应用（客户端）ID（可选）',
         'settings.clientSecret': '客户端密码（可选，机密客户端用）',
-        'settings.clientSecretHint': '如果应用里找不到「允许公共客户端流」，就改走机密客户端：左侧「证书和密码」→ 新客户端密码 → 添加 → 立刻复制那串「值」，粘到这里。留空表示不修改。',
+        'settings.clientSecretHint': '设备代码登录无需密钥。此字段仅用于手动授权方式，留空会保留已保存的值。',
+        'settings.clearClientSecret': '清空已保存的客户端密钥',
         'settings.clientIdHint': '个人邮箱遇到 AADSTS65002 时，可以在 Entra 注册自己的应用，把「应用程序（客户端）ID」填到这里。注册和启用公共客户端流的步骤见顶部「流程指引」。',
         'settings.tenant': '租户',
         'settings.demo': '未连接时显示示例数据',
         'settings.mailTop': '邮件条数',
         'settings.eventDays': '日历天数',
-        'auth.step1': '① 点「打开登录页」，用浏览器登录你的微软账户（工作/学校账户或个人账户都行）。',
-        'auth.step2': '② 登录成功后浏览器会停在一个空白页，地址栏里带 code=... 。把那条完整网址粘贴到下面，点「完成登录」。',
-        'auth.open': '打开登录页',
-        'auth.openSystem': '改用系统浏览器打开',
+        'auth.browserHelp': '也可以在 DeepSeek Harness 内置浏览器中直接登录。先在 Entra 应用的「身份验证」中为「移动和桌面应用程序」登记 http://localhost，登录后插件会自动接收结果。',
+        'auth.open': '在内置浏览器登录',
+        'auth.browserUnavailable': '无法打开 DeepSeek Harness 内置浏览器，请在桌面客户端中重试。',
         'auth.complete': '完成登录',
-        'auth.orDevice': '备用方式：一次性代码（可选）',
+        'auth.orDevice': '备用方式：手动粘贴授权地址',
         'cal.new': '新建日程',
         'cal.create': '创建',
         'cal.created': '日程已创建',
@@ -145,17 +145,19 @@ window.__ModuleLoader__.load({
         'guide.open': '流程指引',
         'guide.title': '连接 Outlook 的流程指引',
         'guide.version': '插件版本',
-        'guide.intro': '请用自己的 Microsoft 账号登录。若内置登录遇到 AADSTS65002，可按下面的步骤配置自己的 Entra 应用。',
+        'guide.intro': '首次连接需要在 Microsoft Entra 注册一个应用。配置好后，用你的 Outlook 账号登录并授权邮件、日历和计划。',
         'guide.register': '注册 Entra 应用',
-        'guide.registerHelp': '在 Microsoft Entra 管理中心打开「Entra ID → 应用注册 → 新注册」。个人邮箱请选择支持个人 Microsoft 账户的类型。注册后，在「概述」复制应用程序（客户端）ID。',
+        'guide.registerHelp': '在 Entra ID 左侧点击「应用注册」，再点「新注册」。在「受支持的帐户类型」中，推荐选择「任何 Entra ID 租户 + 个人 Microsoft 帐户」。注册完成后，回到「应用注册」，切换到「所有应用程序」，复制新应用所在行的「应用程序（客户端）ID」。',
         'guide.openEntra': '打开 Entra 管理中心',
         'guide.publicClient': '启用公共客户端流',
-        'guide.publicClientHelp': '在「Entra ID → 应用注册」列表里，点击第 1 步创建的应用名称，进入应用详情。列表为空时，先完成新注册，或切换到创建该应用的目录。进入详情后，在左侧「管理」下打开「身份验证（预览版） / Authentication (Preview)」，再点「设置」选项卡。如果显示的是「身份验证」，在页面下方找「高级设置」。开启「允许公共客户端流」并保存，设备代码登录时可将客户端密钥留空。',
+        'guide.publicClientHelp': '在 Entra ID 左侧点击「应用注册」，切换到「所有应用程序」，再点击要配置的应用名称。进入应用详情后，打开「身份验证（预览版） / Authentication (Preview)」，在「设置」中开启「允许公共客户端流」并保存。若菜单显示「身份验证」，请在「高级设置」中找这个选项。',
         'guide.configure': '填写插件设置',
-        'guide.configureHelp': '粘贴自己的客户端 ID。租户按注册时选择的账户类型填写。仅个人账户填 consumers，同时支持组织和个人账户填 common，单租户组织应用填目录（租户）ID。填好后点「保存」。',
+        'guide.configureHelp': '在插件「设置」粘贴客户端 ID，客户端密钥留空。第 1 步如果选了「任何 Entra ID 租户 + 个人 Microsoft 帐户」，租户填「common」。如果选了「仅限个人帐户」，填「consumers」。单租户组织应用填「目录（租户）ID」。最后点「保存」。',
         'guide.openSettings': '打开插件设置',
         'guide.authorize': '登录并授权',
-        'guide.authorizeHelp': '点击连接或重新授权，在微软登录页按提示输入设备代码，用自己的邮箱账号登录并同意授权，然后返回 Outlook 面板。',
+        'guide.authorizeHelp': '点「连接 Outlook」或「重新授权」。微软登录页会在 Outlook 面板上弹出。输入插件给出的一次性代码，登录并同意授权。如果选择已登录账户或使用 Windows Hello PIN 后跳到错误页，请选「使用另一个帐户」，手动输入邮箱和密码。授权成功后弹窗会自动关闭。',
+        'guide.browser': '备用方式：在内置浏览器直接登录',
+        'guide.browserHelp': '在左侧点击「应用注册」，切换到「所有应用程序」，再点击你的应用名称。在「身份验证（预览版） / Authentication (Preview)」里添加「移动和桌面应用程序」平台，登记重定向 URI http://localhost 并保存。然后点插件里的「在内置浏览器登录」。',
         'ui.panel': '主面板',
         'ui.mail': '邮件列表',
         'ui.calendar': '日历月视图',
@@ -195,7 +197,8 @@ window.__ModuleLoader__.load({
         'connect.step1': '① 点击「登录微软账户」拿到一次性代码。',
         'connect.step2': '② 打开登录页，粘贴代码，用工作或学校账户登录并同意授权。',
         'connect.step3': '③ 授权完成后本窗口自动连接，不需要注册任何应用。',
-        'connect.start': '登录微软账户',
+        'connect.start': '获取登录代码',
+        'connect.restart': '重新获取代码',
         'connect.code': '一次性代码',
         'connect.copy': '复制代码',
         'connect.copied': '代码已复制，粘贴到登录页即可。',
@@ -204,9 +207,10 @@ window.__ModuleLoader__.load({
         'connect.openPlain': '打开 microsoft.com/devicelogin',
         'connect.manual': '手动打开',
         'connect.openInApp': '在应用内打开登录页',
-        'connect.open': '用系统浏览器打开',
         'connect.waiting': '等待你在浏览器中完成登录…',
-        'connect.builtin': '当前用的是内置客户端。若登录页报 AADSTS65002，说明微软策略拦截了内置客户端，请在「设置」里填一个自己的客户端 ID（免费注册，步骤见设置页）。',
+        'connect.builtin': '首次使用请按「流程指引」注册 Microsoft Entra 应用，再到「设置」填写应用程序（客户端）ID。设备代码登录可将客户端密钥留空。',
+        'connect.deviceHelp': '获取一次性代码后，在微软页面输入代码，用自己的 Outlook 账号登录并同意授权。',
+        'connect.passkeyHelp': '如果选择已登录账户或使用 Windows Hello PIN 后跳到「这不是正确的页面」，请在微软页面选择「使用另一个帐户」，手动输入要连接的邮箱地址和密码。出现 PIN 弹窗时点「取消」。设备代码过期后可回插件重新获取。',
         'connect.timeout': '等了太久还没收到授权结果。重新点一次「登录微软账户」即可，宿主会在后台继续等待。',
         'connect.done': '已连接 Outlook',
         'connect.missing': '请先在「设置」里填写 Microsoft 应用（客户端）ID。',
@@ -318,18 +322,18 @@ window.__ModuleLoader__.load({
         'settings.title': 'Connection settings',
         'settings.clientId': 'Microsoft app (client) ID - optional',
         'settings.clientSecret': 'Client secret (optional, confidential client)',
-        'settings.clientSecretHint': 'If the app has no "allow public client flows" switch, use a confidential client instead: Certificates & secrets -> New client secret -> copy the Value -> paste it here. Leave empty to keep the stored one.',
+        'settings.clientSecretHint': 'Device code sign-in needs no secret. This field is for manual authorization. Leave it blank to keep the stored value.',
+        'settings.clearClientSecret': 'Clear the saved client secret',
         'settings.clientIdHint': 'If a personal mailbox returns AADSTS65002, register your own Entra app and enter its Application (client) ID here. See the Setup guide for registration and public client flow settings.',
         'settings.tenant': 'Tenant',
         'settings.demo': 'Show sample data while disconnected',
         'settings.mailTop': 'Messages',
         'settings.eventDays': 'Calendar days',
-        'auth.step1': '1. Press "Open sign-in page" and sign in with your Microsoft account (work, school or personal).',
-        'auth.step2': '2. After signing in the browser stops on a blank page whose address contains code=... . Paste that whole URL below and press "Finish sign-in".',
-        'auth.open': 'Open sign-in page',
-        'auth.openSystem': 'Open in system browser',
+        'auth.browserHelp': 'You can also sign in using the DeepSeek Harness browser. First register http://localhost under Mobile and desktop applications in your Entra app.',
+        'auth.open': 'Sign in with the in-app browser',
+        'auth.browserUnavailable': 'The DeepSeek Harness browser could not open. Try again in the desktop app.',
         'auth.complete': 'Finish sign-in',
-        'auth.orDevice': 'Fallback: one-time code (optional)',
+        'auth.orDevice': 'Alternative: paste the authorization URL',
         'cal.new': 'New event',
         'cal.create': 'Create',
         'cal.created': 'Event created',
@@ -347,17 +351,19 @@ window.__ModuleLoader__.load({
         'guide.open': 'Setup guide',
         'guide.title': 'Connect Outlook',
         'guide.version': 'Plugin version',
-        'guide.intro': 'Sign in with your own Microsoft account. If the built-in sign-in returns AADSTS65002, follow these steps to configure your own Entra app.',
+        'guide.intro': 'To connect for the first time, register an app in Microsoft Entra. Then sign in with your Outlook account and grant access to mail, calendars, and tasks.',
         'guide.register': 'Register an Entra app',
-        'guide.registerHelp': 'In the Microsoft Entra admin center, go to Entra ID → App registrations → New registration. For a personal mailbox, choose an account type that supports personal Microsoft accounts. Copy the Application (client) ID from Overview.',
+        'guide.registerHelp': 'In Entra ID, select “App registrations”, then “New registration”. Under “Supported account types”, the recommended option is “Any Entra ID tenant + personal Microsoft accounts”. After registering, return to “App registrations”, select “All applications”, and copy the “Application (client) ID” from your app’s row.',
         'guide.openEntra': 'Open the Entra admin center',
         'guide.publicClient': 'Enable public client flows',
-        'guide.publicClientHelp': 'In Entra ID → App registrations, select the app you created in step 1 to open its details. If the list is empty, complete the registration or switch to the directory where you created the app. Under Manage, open Authentication (Preview) and select Settings. If you see Authentication, look under Advanced settings. Enable Allow public client flows and save. Leave the client secret blank for device code sign-in.',
+        'guide.publicClientHelp': 'Select “App registrations” from the Entra ID left menu, switch to “All applications”, and click the name of your app. In the app details, select “Authentication (Preview)”, then “Settings”. Turn on “Allow public client flows” and save. If the page is labeled “Authentication”, look under “Advanced settings”.',
         'guide.configure': 'Configure the plugin',
-        'guide.configureHelp': 'Paste your client ID. Use consumers for personal accounts only, common for both organizational and personal accounts, or the Directory (tenant) ID for a single-tenant organizational app. Select Save.',
+        'guide.configureHelp': 'Paste your client ID in the plugin “Settings” and leave the client secret blank. For “Any Entra ID tenant + personal Microsoft accounts”, enter “common” in the Tenant field. For personal accounts only, enter “consumers”. For a single-tenant organizational app, enter its “Directory (tenant) ID”. Select “Save”.',
         'guide.openSettings': 'Open plugin settings',
         'guide.authorize': 'Sign in and authorize',
-        'guide.authorizeHelp': 'Select Connect or Reauthorize. Follow the Microsoft sign-in page’s device code instructions, sign in with your own mailbox account and grant consent, then return to Outlook.',
+        'guide.authorizeHelp': 'Select “Connect” or “Reauthorize”. Enter the one-time code in the sign-in window on the Outlook panel, then sign in and grant consent. If choosing a saved account or using a Windows Hello PIN leads to an error page, select “Use another account” and enter your email and password manually. The window closes when authorization succeeds.',
+        'guide.browser': 'Alternative: sign in directly in the in-app browser',
+        'guide.browserHelp': 'Select “App registrations” from the left menu, switch to “All applications”, and click your app name. Open “Authentication (Preview)”, add the “Mobile and desktop applications” platform, register http://localhost as a redirect URI, and save. Then select “Sign in with the in-app browser” in the plugin.',
         'ui.panel': 'Main panel',
         'ui.mail': 'Mail list',
         'ui.calendar': 'Calendar month view',
@@ -397,7 +403,8 @@ window.__ModuleLoader__.load({
         'connect.step1': '1. Press "Log in with Microsoft" to get a one-time code.',
         'connect.step2': '2. Open the sign-in page, paste the code, and approve access with your work or school account.',
         'connect.step3': '3. The panel connects by itself. No app registration anywhere.',
-        'connect.start': 'Log in with Microsoft',
+        'connect.start': 'Get sign-in code',
+        'connect.restart': 'Get a new code',
         'connect.code': 'One-time code',
         'connect.copy': 'Copy code',
         'connect.copied': 'Code copied - paste it on the sign-in page.',
@@ -406,9 +413,10 @@ window.__ModuleLoader__.load({
         'connect.openPlain': 'Open microsoft.com/devicelogin',
         'connect.manual': 'Open manually',
         'connect.openInApp': 'Open sign-in inside the app',
-        'connect.open': 'Open in system browser',
         'connect.waiting': 'Waiting for you to finish signing in...',
-        'connect.builtin': 'Using the built-in client. If the sign-in page reports AADSTS65002, Microsoft policy blocked it - put your own client ID in Settings (free, steps are on the settings page).',
+        'connect.builtin': 'Follow the setup guide to register a Microsoft Entra app and enter its application (client) ID in Settings. A client secret is optional for device code sign-in.',
+        'connect.deviceHelp': 'Get a one-time code, enter it on the Microsoft page, then sign in to your Outlook account and grant access.',
+        'connect.passkeyHelp': 'If selecting a signed-in account or using a Windows Hello PIN leads to “This is not the right page,” choose “Use another account” on the Microsoft page and enter the email address and password manually. Cancel any PIN prompt. If the device code expires, get a new one from the plugin.',
         'connect.timeout': 'No authorization result arrived in time. Press "Log in with Microsoft" again; the Host keeps waiting in the background.',
         'connect.done': 'Outlook connected',
         'connect.missing': 'Fill in the Microsoft app (client) ID in Settings first.',
@@ -446,6 +454,7 @@ window.__ModuleLoader__.load({
       subs: new Set(),
       timer: null,
       inflight: null,
+      taskInflight: null,
 
       subscribe(fn) {
         store.subs.add(fn)
@@ -480,17 +489,17 @@ window.__ModuleLoader__.load({
         store.emit()
         store.inflight = (async () => {
           try {
-            const data = await api(`/snapshot${force ? '?refresh=1' : ''}`)
+            const data = await api(`/snapshot?scope=mail${force ? '&refresh=1' : ''}`)
             const previous = store.snapshot
-            if (data.taskError && data.connected && previous?.connected &&
-                data.account?.mail && data.account.mail === previous.account?.mail &&
-                previous.taskLists?.length && (!previous.taskError || previous.taskStale)) {
-              data.taskLists = previous.taskLists
-              data.tasks = previous.tasks
-              data.taskStale = true
+            const sameAccount = data.connected && previous?.connected &&
+              data.account?.mail && data.account.mail === previous.account?.mail
+            if (sameAccount) {
+              for (const key of ['taskLists', 'tasks', 'taskError', 'taskStale']) data[key] = previous[key]
+              if (data.mailError && previous.mail?.length) data.mail = previous.mail
             }
             store.snapshot = data
             store.error = null
+            return data
           } catch (error) {
             store.error = error?.message || String(error)
           } finally {
@@ -500,6 +509,32 @@ window.__ModuleLoader__.load({
           }
         })()
         return store.inflight
+      },
+
+      loadTasks() {
+        if (store.taskInflight) return store.taskInflight
+        const current = store.snapshot
+        if (!current?.connected && !current?.demo) return
+        const isCurrent = () => {
+          const latest = store.snapshot
+          return latest === current || (latest?.connected && current.account?.mail &&
+            latest.account?.mail === current.account.mail)
+        }
+        store.taskInflight = api('/tasks')
+          .then((data) => {
+            if (!isCurrent()) return
+            if (data.taskError && store.snapshot.taskLists?.length) {
+              store.patch({ taskError: data.taskError, taskStale: true })
+            } else {
+              const { taskLists, tasks, taskError } = data
+              store.patch({ taskLists, tasks, taskError, taskStale: false })
+            }
+          })
+          .catch((error) => {
+            if (isCurrent()) store.patch({ taskError: error.message, taskStale: !!store.snapshot.taskLists?.length })
+          })
+          .finally(() => { store.taskInflight = null })
+        return store.taskInflight
       },
 
       patch(patch) {
@@ -817,6 +852,18 @@ window.__ModuleLoader__.load({
 .ob-grid-calendar{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
 .ob-modal-mask{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.28);backdrop-filter:blur(2px)}
 .ob-modal{width:min(760px,92vw);max-height:82vh;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 18px 48px rgba(0,0,0,0.28)}
+.ob-signin-layout{z-index:100;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);grid-template-rows:minmax(0,1fr);align-items:stretch;gap:clamp(16px,4vw,80px);padding:10vh 6vw 12vh;box-sizing:border-box}
+.ob-signin-layout>.ob-modal{width:auto;height:auto;max-height:none;min-width:0;min-height:0;margin:0}
+@media(max-width:880px){
+  .ob-signin-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,2fr);gap:12px;padding:5vh 4vw}
+}
+.ob-signin-mask{z-index:100}
+.ob-signin-mask,.ob-signin-mask *,.ob-guide-dialog,.ob-guide-dialog *{-webkit-user-select:none;user-select:none}
+.ob-signin-mask ::selection,.ob-guide-dialog ::selection{background:transparent;color:inherit}
+.ob-signin-dialog{width:min(960px,92vw);height:min(740px,82vh);box-sizing:border-box}
+.ob-signin-viewport{display:flex;flex:1;min-height:0;overflow:hidden;border:1px solid var(--ob-line);border-radius:8px;background:#fff}
+.ob-signin-webview{display:flex;flex:1;width:100%;height:100%;min-width:0;min-height:0;border:0;-webkit-app-region:no-drag}
+.ob-signin-loading{padding:0 6px;font-size:12px}
 .ob-modal-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;flex:none}
 .ob-guide-entry{display:flex;align-items:center;gap:8px}
 .ob-guide-dialog{box-sizing:border-box;width:min(600px,calc(100vw - 24px))}
@@ -826,6 +873,8 @@ window.__ModuleLoader__.load({
 .ob-guide-steps li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:10px;border:1px solid var(--dsw-alias-border-l1,#ddd);border-radius:9px}
 .ob-guide-number{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,#0f6cbd 12%,transparent);color:#0f6cbd;font-weight:700}
 .ob-guide-steps h3{margin:0 0 4px;font-size:13px;line-height:24px}
+.ob-guide-steps p{line-height:1.75}
+.ob-guide-highlight{display:inline-block;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;padding:0 4px;border-radius:4px;background:color-mix(in srgb,var(--dsw-alias-bg-layer-1,#fff) 88%,#0f6cbd);color:var(--dsw-alias-label-primary,#18212b);font-weight:600;line-height:1.4;box-shadow:0 1px 3px rgba(15,70,120,.19)}
 .ob-guide-steps .ob-btn{margin-top:8px;text-decoration:none}
 .ob-cal-cell{cursor:pointer}
 .ob-modal-sm{width:min(380px,90vw)}
@@ -2430,7 +2479,8 @@ window.__ModuleLoader__.load({
             h('option', { value: 'all' }, t('mail.all')), CATEGORY_META.map(([key]) => h('option', { key, value: key }, t(`cat.${key}`))))),
         ) : null,
         h('div', { className: 'ob-list' }, visible.length === 0
-          ? h('div', { className: 'ob-empty' }, filter === 'unread' ? t('mail.emptyUnread') : '此视图中没有邮件')
+          ? h('div', { className: 'ob-empty' }, props.listUnavailable ? '邮件暂未加载，请刷新重试' :
+              filter === 'unread' ? t('mail.emptyUnread') : '此视图中没有邮件')
           : groups.map((group) => h('div', { key: group.label },
               h('button', { type: 'button', className: `ob-mail-dayhead${collapsed[group.label] ? ' collapsed' : ''}`,
                 'aria-expanded': !collapsed[group.label], onClick: () => setCollapsed({ ...collapsed, [group.label]: !collapsed[group.label] }) },
@@ -4094,55 +4144,29 @@ window.__ModuleLoader__.load({
 
     function ConnectPanel(props) {
       const {
-        t, builtin, code, error, busy, paste,
-        onPasteChange, onOpenInApp, onOpenSystem, onComplete,
-        onStart, onCopy, onOpenSettings,
+        t, builtin, code, error, busy, browserWaiting,
+        onBrowserSignIn,
+        onStart, onCopy, onOpen, onOpenSettings, onOpenGuide,
       } = props
       return h(
         'div',
         { className: 'ob-connect' },
         h('h3', null, t('connect.title')),
-        h('p', null, t('auth.step1')),
-        h(
-          'div',
-          { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-          h(
-            'button',
-            { type: 'button', className: 'ob-btn primary', disabled: busy, onClick: onOpenInApp },
-            t('auth.open'),
-          ),
+        error ? h('div', { className: 'ob-error', role: 'alert' }, error) : null,
+        h('p', null, t(builtin ? 'connect.builtin' : 'connect.deviceHelp')),
+        !builtin ? h('p', { className: 'ob-sub' }, t('connect.passkeyHelp')) : null,
+        h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+          builtin
+            ? h('button', { type: 'button', className: 'ob-btn primary', onClick: onOpenGuide }, t('guide.open'))
+            : h('button', { type: 'button', className: 'ob-btn primary', disabled: busy,
+                onClick: () => onStart(Boolean(code)) }, t(code ? 'connect.restart' : 'connect.start')),
+          h('button', { type: 'button', className: 'ob-btn', onClick: onOpenSettings }, t('action.settings')),
         ),
-        h('p', null, t('auth.step2')),
-        h('textarea', {
-          className: 'ob-textarea',
-          rows: 3,
-          spellCheck: false,
-          value: paste,
-          placeholder: 'https://login.microsoftonline.com/common/oauth2/nativeclient?code=...',
-          onChange: (event) => onPasteChange(event.target.value),
-        }),
-        h(
-          'div',
-          { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-          h(
-            'button',
-            {
-              type: 'button',
-              className: 'ob-btn primary',
-              disabled: busy || !String(paste || '').trim(),
-              onClick: onComplete,
-            },
-            t('auth.complete'),
-          ),
-          h(
-            'button',
-            { type: 'button', className: 'ob-btn', onClick: onOpenSystem },
-            t('auth.openSystem'),
-          ),
-        ),
-        builtin ? h('p', null, t('connect.builtin')) : null,
-        error ? h('div', { className: 'ob-error' }, error) : null,
-        h('div', { className: 'ob-divider' }, t('auth.orDevice')),
+        !builtin ? h('div', null,
+          h('p', null, t('auth.browserHelp')),
+          h('button', { type: 'button', className: 'ob-btn', disabled: busy, onClick: onBrowserSignIn }, t('auth.open')),
+        ) : null,
+        browserWaiting ? h('p', { role: 'status' }, t('connect.waiting')) : null,
         code
           ? h(
               'div',
@@ -4157,6 +4181,7 @@ window.__ModuleLoader__.load({
                   { type: 'button', className: 'ob-btn', onClick: () => onCopy(code.userCode) },
                   t('connect.copy'),
                 ),
+                h('button', { type: 'button', className: 'ob-btn', onClick: onOpen }, t('connect.openInApp')),
                 h(
                   'span',
                   { className: 'ob-sub' },
@@ -4166,39 +4191,39 @@ window.__ModuleLoader__.load({
               h('div', { className: 'ob-sub' }, t('connect.waiting')),
             )
           : null,
-        h(
-          'div',
-          { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-          h('button', { type: 'button', className: 'ob-btn', disabled: busy, onClick: onStart }, t('connect.start')),
-          h('button', { type: 'button', className: 'ob-btn', onClick: onOpenSettings }, t('action.settings')),
-        ),
       )
     }
 
-    function SetupGuide({ t, version, connected, busy, onOpenEntra, onSettings, onConnect, onClose }) {
+    function SetupGuide({ t, version, connected, busy, alongsideBrowser, onOpenEntra, onSettings, onConnect, onClose }) {
       const entraUrl = 'https://entra.microsoft.com/'
       const steps = [
-        ['register', h('a', { className: 'ob-btn', href: entraUrl, target: '_blank', rel: 'noopener noreferrer',
-          onClick: (event) => { if (onOpenEntra(entraUrl)) event.preventDefault() } }, t('guide.openEntra'))],
+        ['register', h('button', { className: 'ob-btn', type: 'button',
+          onClick: () => onOpenEntra(entraUrl) }, t('guide.openEntra'))],
         ['publicClient'],
         ['configure', h('button', { type: 'button', className: 'ob-btn', onClick: onSettings }, t('guide.openSettings'))],
         ['authorize', h('button', { type: 'button', className: 'ob-btn primary', disabled: busy, onClick: onConnect },
           t(connected ? 'action.reauth' : 'action.connect'))],
+        ['browser'],
       ]
-      return h('div', { className: 'ob-modal-mask',
-        onClick: (event) => { if (event.target === event.currentTarget) onClose() } },
-        h('section', { className: 'ob-modal ob-guide-dialog', role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'ob-guide-title',
+      const guide = h('section', { className: 'ob-modal ob-guide-dialog', role: alongsideBrowser ? 'region' : 'dialog',
+        'aria-modal': alongsideBrowser ? undefined : true, 'aria-labelledby': 'ob-guide-title',
           onKeyDown: (event) => { if (event.key === 'Escape') onClose() } },
           h('header', { className: 'ob-modal-head' },
             h('div', null, h('span', { id: 'ob-guide-title' }, t('guide.title')),
               version ? h('span', { className: 'ob-guide-version' }, `${t('guide.version')} v${version}`) : null),
-            h('button', { type: 'button', className: 'ob-btn', autoFocus: true, onClick: onClose }, t('action.close'))),
+            alongsideBrowser ? null
+              : h('button', { type: 'button', className: 'ob-btn', autoFocus: true, onClick: onClose }, t('action.close'))),
           h('div', { className: 'ob-guide-body' },
             h('p', null, t('guide.intro')),
             h('ol', { className: 'ob-guide-steps' }, steps.map(([key, action], index) =>
               h('li', { key },
                 h('span', { className: 'ob-guide-number', 'aria-hidden': true }, index + 1),
-                h('div', null, h('h3', null, t(`guide.${key}`)), h('p', null, t(`guide.${key}Help`)), action)))))))
+                h('div', null, h('h3', null, t(`guide.${key}`)),
+                  h('p', null, t(`guide.${key}Help`).split(/(「[^」]+」|“[^”]+”)/g).map((part, i) =>
+                    i % 2 ? h('span', { key: i, className: 'ob-guide-highlight' }, part.slice(1, -1)) : part)),
+                  action))))))
+      return alongsideBrowser ? guide : h('div', { className: 'ob-modal-mask',
+        onClick: (event) => { if (event.target === event.currentTarget) onClose() } }, guide)
     }
 
     function SettingsPanel(props) {
@@ -4224,6 +4249,10 @@ window.__ModuleLoader__.load({
         h('small', { style: { color: 'var(--dsw-alias-label-quaternary)', fontSize: '11px' } }, t('settings.clientIdHint')),
         field(t('settings.clientSecret'), 'clientSecret', 'password'),
         h('small', { style: { color: 'var(--dsw-alias-label-quaternary)', fontSize: '11px' } }, t('settings.clientSecretHint')),
+        h('label', { className: 'ob-checkline' },
+          h('input', { type: 'checkbox', checked: Boolean(draft.clearClientSecret), onChange: (event) =>
+            setDraft({ ...draft, clearClientSecret: event.target.checked }) }),
+          t('settings.clearClientSecret')),
         h(
           'div',
           { className: 'ob-settings-row' },
@@ -4252,9 +4281,97 @@ window.__ModuleLoader__.load({
 
     /* ----------------------------------------------------------- the page */
 
+    function SignInBrowser({ t, url, onClose }) {
+      const viewport = React.useRef(null)
+      const [loading, setLoading] = React.useState(true)
+      const [failure, setFailure] = React.useState(false)
+      React.useEffect(() => {
+        const bridge = globalThis.dshDesktop?.browser
+        const container = viewport.current
+        const lifetime = new AbortController()
+        const { signal } = lifetime
+        let lease
+        let guest
+        let unsubscribe
+        const release = () => {
+          unsubscribe?.()
+          unsubscribe = null
+          guest?.remove()
+          guest = null
+          if (lease) {
+            void bridge.release(lease).catch(() => {})
+            lease = null
+          }
+        }
+        const failed = () => {
+          if (signal.aborted) return
+          setLoading(false)
+          setFailure(true)
+        }
+        const mount = async () => {
+          const reservation = await bridge.acquire('outlook-bridge:sign-in')
+          lease = reservation.lease
+          if (signal.aborted) {
+            release()
+            return
+          }
+          guest = document.createElement('webview')
+          guest.className = 'ob-signin-webview'
+          guest.setAttribute('name', lease)
+          guest.setAttribute('partition', reservation.partition)
+          guest.setAttribute('allowpopups', '')
+          guest.setAttribute('src', 'about:blank#' + lease)
+          const navigate = (target) => {
+            if (!signal.aborted) void Promise.resolve().then(() => {
+              if (!signal.aborted) return guest.loadURL(target)
+            }).catch((error) => {
+              if (error?.code !== 'ERR_ABORTED') failed()
+            })
+          }
+          unsubscribe = bridge.onOpenRequested(lease, navigate)
+          guest.addEventListener('dom-ready', () => navigate(url), { signal, once: true })
+          guest.addEventListener('did-start-loading', () => setLoading(true), { signal })
+          guest.addEventListener('did-stop-loading', () => setLoading(false), { signal })
+          guest.addEventListener('did-fail-load', (event) => {
+            if (event.isMainFrame && event.errorCode !== -3) failed()
+          }, { signal })
+          guest.addEventListener('render-process-gone', failed, { signal })
+          container.append(guest)
+        }
+        void mount().catch(() => {
+          release()
+          failed()
+        })
+        return () => {
+          lifetime.abort()
+          release()
+        }
+      }, [url])
+
+      return h('section', { className: 'ob-modal ob-signin-dialog', role: 'region',
+          'aria-label': t('connect.title'), onKeyDown: (event) => { if (event.key === 'Escape') onClose() } },
+          h('div', { className: 'ob-modal-head' },
+            h('span', null, t('connect.title')),
+            h('button', { className: 'ob-btn', type: 'button', onClick: onClose }, t('action.close'))),
+          failure ? h('div', { className: 'ob-error', role: 'alert' }, t('auth.browserUnavailable'))
+            : loading ? h('div', { className: 'ob-signin-loading', role: 'status' }, t('loading')) : null,
+          h('div', { className: 'ob-signin-viewport', ref: viewport }))
+    }
+
+    let firstGuideRequest
+    let firstGuideShown = false
+
     function MainPage(props) {
       const t = props?.t || fbT
-      const openInApp = props?.openInApp || (() => false)
+      const [signInUrl, setSignInUrl] = React.useState(null)
+      const openInApp = React.useCallback((url) => {
+        const desktop = globalThis.dshDesktop
+        const bridge = desktop?.browser
+        if (!url || desktop?.protocolVersion !== 1 || typeof bridge?.acquire !== 'function' ||
+            typeof bridge?.release !== 'function' || typeof bridge?.onOpenRequested !== 'function') return false
+        setSignInUrl(url)
+        return true
+      }, [])
       const snap = useSnapshot()
       const [filter, setFilter] = React.useState('all')
       const [selected, setSelected] = React.useState(null)
@@ -4264,7 +4381,7 @@ window.__ModuleLoader__.load({
       const [error, setError] = React.useState(null)
       const [notice, setNotice] = React.useState(null)
       const [draft, setDraft] = React.useState({ clientId: '', clientSecret: '', tenant: 'consumers', demo: true, mailTop: 12, eventDays: 7 })
-      const [paste, setPaste] = React.useState('')
+      const [browserWaiting, setBrowserWaiting] = React.useState(false)
       const [view, setView] = React.useState('mail')
       const [completedSort, setCompletedSort] = React.useState({ field: 'completedAt', ascending: false })
       const [showUi, setShowUi] = React.useState(false)
@@ -4280,6 +4397,7 @@ window.__ModuleLoader__.load({
       const folderLoads = React.useRef(new Map())
       const [folders, setFolders] = React.useState([])
       const [folderMail, setFolderMail] = React.useState(null)
+      const [folderError, setFolderError] = React.useState(null)
       const [compose, setCompose] = React.useState(null)
       const [aiText, setAiText] = React.useState('')
       const [aiBusy, setAiBusy] = React.useState(false)
@@ -4289,8 +4407,20 @@ window.__ModuleLoader__.load({
       const [calendarNonce, setCalendarNonce] = React.useState(0)
 
       React.useEffect(() => {
+        if (firstGuideShown) return
+        let active = true
+        firstGuideRequest ??= api('/setup-guide/first-open', { method: 'POST' })
+        firstGuideRequest.then(({ show }) => {
+          if (!active || firstGuideShown) return
+          firstGuideShown = true
+          if (show) setShowGuide(true)
+        }).catch(() => { firstGuideRequest = undefined })
+        return () => { active = false }
+      }, [])
+
+      React.useEffect(() => {
         let alive = true
-        api('/state')
+        api('/state?account=0')
           .then((state) => {
             if (!alive || !state?.settings) return
             if (state.settings.appearance) {
@@ -4306,6 +4436,15 @@ window.__ModuleLoader__.load({
               mailTop: state.settings.mailTop ?? 12,
               eventDays: state.settings.eventDays ?? 7,
             })
+            const pending = state.pending
+            if (state.auth?.status === 'pending' && pending?.active && pending.userCode) {
+              const expiresIn = Math.ceil((Date.parse(pending.expiresAt) - Date.now()) / 1000)
+              if (expiresIn > 0) {
+                setCode((current) => current ?? { userCode: pending.userCode, signInUrl: pending.signInUrl, expiresIn })
+              }
+            }
+            if (state.auth?.browserPending) setBrowserWaiting(true)
+            if (state.auth?.status === 'error') setError((current) => current ?? state.auth.message)
           })
           .catch(() => {})
         return () => {
@@ -4329,11 +4468,12 @@ window.__ModuleLoader__.load({
         }
       }, [])
 
-      const startConnect = React.useCallback(async () => {
+      const startConnect = React.useCallback(async (restart = false) => {
         setBusy(true)
         setError(null)
         try {
-          const info = await api('/connect/start', { method: 'POST' })
+          const info = await api('/connect/start', { method: 'POST', body: { restart: restart === true } })
+          setBrowserWaiting(false)
           setCode(info)
           setNotice(null)
           try {
@@ -4342,19 +4482,13 @@ window.__ModuleLoader__.load({
           } catch {
             /* clipboard permission is optional */
           }
-          if (!openInApp(info.signInUrl)) {
-            try {
-              await api('/connect/open', { method: 'POST', body: { url: info.signInUrl } })
-            } catch {
-              /* the panel still shows the code and the URL */
-            }
-          }
+          if (!await openInApp(info.signInUrl)) throw new Error(t('auth.browserUnavailable'))
         } catch (failure) {
           setError(failure.message)
         } finally {
           setBusy(false)
         }
-      }, [])
+      }, [openInApp, t])
 
       const copyCode = React.useCallback(async (value) => {
         try {
@@ -4365,55 +4499,32 @@ window.__ModuleLoader__.load({
         }
       }, [t])
 
-      const openAuthorizeInApp = React.useCallback(async () => {
+      const openBrowserSignIn = React.useCallback(async () => {
         setError(null)
-        try {
-          const info = await api('/auth/url')
-          if (!openInApp(info.url)) await api('/auth/open', { method: 'POST' })
-        } catch (failure) {
-          setError(failure.message)
-        }
-      }, [])
-
-      const openAuthorizeSystem = React.useCallback(async () => {
-        setError(null)
-        try {
-          await api('/auth/open', { method: 'POST' })
-        } catch (failure) {
-          setError(failure.message)
-        }
-      }, [])
-
-      const completeAuth = React.useCallback(async () => {
         setBusy(true)
-        setError(null)
         try {
-          const result = await api('/auth/complete', { method: 'POST', body: { text: paste } })
-          if (result.ok) {
-            setPaste('')
-            setNotice(t('connect.done'))
-            await store.load(true)
-          } else {
-            setError(result.error || 'failed')
-          }
+          const { url } = await api('/auth/open', { method: 'POST' })
+          setCode(null)
+          if (!await openInApp(url)) throw new Error(t('auth.browserUnavailable'))
+          setBrowserWaiting(true)
         } catch (failure) {
           setError(failure.message)
         } finally {
           setBusy(false)
         }
-      }, [paste, t])
-
-      const openSignIn = React.useCallback(async (url) => {
+      }, [openInApp, t])
+      const openSignIn = React.useCallback(async () => {
         try {
-          await api('/connect/open', { method: 'POST', body: { url } })
+          if (!await openInApp(code?.signInUrl)) throw new Error(t('auth.browserUnavailable'))
+          setError(null)
           setNotice(t('connect.opened'))
         } catch (failure) {
           setError(failure.message)
         }
-      }, [t])
+      }, [code, openInApp, t])
 
       React.useEffect(() => {
-        if (!code) return
+        if (!code && !browserWaiting) return
         let stopped = false
         let handle = null
         let tries = 0
@@ -4421,23 +4532,27 @@ window.__ModuleLoader__.load({
           if (stopped) return
           tries += 1
           try {
-            const status = await api('/state')
+            const status = await api('/state?account=0')
             if (stopped) return
-            if (status.connected) {
+            const auth = status.auth || {}
+            if (status.connected && auth.status === 'done') {
               setCode(null)
+              setBrowserWaiting(false)
               setError(null)
               setNotice(t('connect.done'))
+              setSignInUrl(null)
               store.load(true)
               return
             }
-            const auth = status.auth || {}
             if (auth.status === 'error' || auth.status === 'expired' || auth.status === 'declined') {
               setCode(null)
+              setBrowserWaiting(false)
               setError(auth.message || auth.status)
               return
             }
             if (auth.status === 'idle' && !auth.pending) {
               setCode(null)
+              setBrowserWaiting(false)
               return
             }
           } catch {
@@ -4445,6 +4560,7 @@ window.__ModuleLoader__.load({
           }
           if (tries > 150) {
             setCode(null)
+            setBrowserWaiting(false)
             setError(t('connect.timeout'))
             return
           }
@@ -4455,13 +4571,7 @@ window.__ModuleLoader__.load({
           stopped = true
           if (handle) clearTimeout(handle)
         }
-      }, [code, t])
-
-      const refresh = React.useCallback(async () => {
-        setBusy(true)
-        await store.load(true)
-        setBusy(false)
-      }, [])
+      }, [code, browserWaiting, t])
 
       const saveSettings = React.useCallback(async () => {
         setBusy(true)
@@ -4475,11 +4585,14 @@ window.__ModuleLoader__.load({
               demo: Boolean(draft.demo),
               mailTop: Number(draft.mailTop) || 12,
               eventDays: Number(draft.eventDays) || 7,
-              ...(String(draft.clientSecret || '').trim()
+              ...(draft.clearClientSecret ? { clientSecret: '' } : String(draft.clientSecret || '').trim()
                 ? { clientSecret: String(draft.clientSecret).trim() }
                 : {}),
             },
           })
+          setCode(null)
+          setBrowserWaiting(false)
+          setDraft((current) => ({ ...current, clientSecret: '', clearClientSecret: false }))
           setShowSettings(false)
           await store.load(true)
         } catch (failure) {
@@ -4534,38 +4647,73 @@ window.__ModuleLoader__.load({
       }, [])
 
       const loadFolderMail = React.useCallback(async (key) => {
+        if (key === 'inbox') {
+          const data = await store.load(true)
+          return data?.mailError ? undefined : data?.mail
+        }
         const request = Symbol()
         folderLoads.current.set(key, request)
         const isCurrent = () => activeFolder.current === key && folderLoads.current.get(key) === request
         try {
           const result = await api(`/mail?folder=${encodeURIComponent(key)}`)
           const rows = result.mail ?? []
-          if (isCurrent()) setFolderMail(rows)
+          if (isCurrent()) {
+            setFolderMail(rows)
+            setFolderError(null)
+          }
           return rows
         } catch (failure) {
-          if (isCurrent()) setError(failure.message)
+          if (isCurrent()) setFolderError(failure.message)
         }
       }, [])
 
-      React.useEffect(() => {
-        loadFolders()
-      }, [loadFolders])
+      const refresh = React.useCallback(async () => {
+        setBusy(true)
+        setError(null)
+        try {
+          if (view === 'todo') await store.loadTasks()
+          else if (view === 'calendar') {
+            setCalendarNonce((n) => n + 1)
+            void store.loadTasks()
+          } else if (folder === 'inbox' || !store.snapshot?.connected) {
+            await store.load(true)
+          } else {
+            await loadFolderMail(folder)
+          }
+        } finally {
+          setBusy(false)
+        }
+      }, [view, folder, loadFolderMail])
 
       React.useEffect(() => {
-        loadFolderMail(folder)
-      }, [folder, loadFolderMail])
+        if (snap?.connected && view === 'mail') loadFolders()
+      }, [snap?.connected, snap?.account?.mail, view, loadFolders])
+
+      React.useEffect(() => {
+        if (snap?.connected && view === 'mail' && folder !== 'inbox') loadFolderMail(folder)
+      }, [snap?.connected, snap?.account?.mail, view, folder, loadFolderMail])
+
+      React.useEffect(() => {
+        if ((snap?.connected || snap?.demo) && (view === 'todo' || view === 'calendar')) {
+          void store.loadTasks()
+          const timer = setInterval(() => store.loadTasks(), 60_000)
+          return () => clearInterval(timer)
+        }
+      }, [snap?.connected, snap?.demo, snap?.account?.mail, view])
 
       const afterMailAction = React.useCallback(async () => {
         setSelected(null)
-        await loadFolderMail(activeFolder.current)
+        const key = activeFolder.current
+        await loadFolderMail(key)
         await loadFolders()
-        store.load(true)
+        if (key !== 'inbox') store.load(true)
       }, [loadFolderMail, loadFolders])
 
       const selectMailFolder = (key) => {
         if (key !== folder) {
           setFolder(key)
           setFolderMail(null)
+          setFolderError(null)
         }
         setSelected(null)
         setFocus(key === 'inbox' ? 'focused' : 'all')
@@ -4626,8 +4774,10 @@ window.__ModuleLoader__.load({
             })
           }
           await loadFolders()
-          if (store.inflight) await store.inflight
-          await store.load(true)
+          if (folder !== 'inbox') {
+            if (store.inflight) await store.inflight
+            await store.load(true)
+          }
           if (result.unconfirmed) {
             setReadAllFeedback({
               folder,
@@ -4714,7 +4864,7 @@ window.__ModuleLoader__.load({
         setNotice(null)
         try {
           const { task } = await api('/task/create', { method: 'POST', body: { listId: list.id, title, dueDate } })
-          await store.inflight
+          await store.taskInflight
           const tasks = store.snapshot?.tasks ?? []
           if (!tasks.some((row) => row.id === task.id && row.listId === list.id)) {
             store.patch({ tasks: [{ ...task, listName: list.name }, ...tasks] })
@@ -4722,8 +4872,7 @@ window.__ModuleLoader__.load({
           return true
         } catch (failure) {
           if (failure.status === 404) {
-            await store.inflight
-            await store.load(true)
+            await store.loadTasks()
             setError(t('todo.listMissing'))
           } else {
             setError(failure.message)
@@ -4739,11 +4888,10 @@ window.__ModuleLoader__.load({
           setError(failure.message)
           return
         }
-        await store.inflight
-        await store.load(true)
+        await store.loadTasks()
         const snap = store.snapshot
         const stillListed = snap?.tasks?.some((item) => item.id === task.id && item.listId === task.listId)
-        if (!store.error && !snap?.taskError && !stillListed) setNotice(t('todo.taskGone'))
+        if (!snap?.taskError && !stillListed) setNotice(t('todo.taskGone'))
         else setError(t('todo.taskMissing'))
       }, [t])
 
@@ -4755,7 +4903,7 @@ window.__ModuleLoader__.load({
           const result = await api('/task/move', {
             method: 'POST', body: { listId: task.listId, taskId: task.id, ...changes },
           })
-          await store.inflight
+          await store.taskInflight
           store.patch({ tasks: (store.snapshot?.tasks ?? []).map((item) =>
             item.id === task.id && item.listId === task.listId
               ? { ...item, ...result.task, listName: item.listName } : item) })
@@ -4772,7 +4920,7 @@ window.__ModuleLoader__.load({
         setNotice(null)
         try {
           await api('/task/delete', { method: 'POST', body: { listId: task.listId, taskId: task.id } })
-          await store.inflight
+          await store.taskInflight
           const tasks = (store.snapshot?.tasks ?? []).filter((item) => item.id !== task.id || item.listId !== task.listId)
           store.patch({ tasks })
         } catch (failure) {
@@ -4792,7 +4940,7 @@ window.__ModuleLoader__.load({
             method: 'POST',
             body: { listId: task.listId, taskId: task.id, completed },
           })
-          await store.inflight
+          await store.taskInflight
           store.patch({
             tasks: (store.snapshot?.tasks ?? []).map(
               (item) => item.id === task.id && item.listId === task.listId
@@ -4868,6 +5016,7 @@ window.__ModuleLoader__.load({
               try { await store.load(true) } catch { /* ignore */ }
             }
           } else if (intent === 'task' && result.task) {
+            await store.loadTasks()
             const current = store.snapshot
             if (!initialSnapshot?.connected || !current?.connected || current.account?.mail !== initialSnapshot.account?.mail) {
               throw new Error('请连接当前 Outlook 账户后再添加计划')
@@ -4899,7 +5048,8 @@ window.__ModuleLoader__.load({
       const connected = Boolean(snap?.connected)
       const layoutView = view === 'todo' ? 'mail' : view
       const demo = Boolean(snap?.demo)
-      const needsConnect = snap !== null && !connected && !demo
+      const needsConnect = snap !== null && !connected && (!demo || Boolean(code) || browserWaiting)
+      const mailError = view === 'mail' ? folder === 'inbox' ? snap?.mailError : folderError : null
       const subtitle = connected
         ? snap?.account?.mail || snap?.account?.displayName || t('subtitle')
         : t('subtitle')
@@ -4922,15 +5072,13 @@ window.__ModuleLoader__.load({
             code,
             error,
             busy,
-            paste,
-            onPasteChange: setPaste,
-            onOpenInApp: openAuthorizeInApp,
-            onOpenSystem: openAuthorizeSystem,
-            onComplete: completeAuth,
+            browserWaiting,
+            onBrowserSignIn: openBrowserSignIn,
             onStart: startConnect,
             onCopy: copyCode,
             onOpen: openSignIn,
             onOpenSettings: openSettings,
+            onOpenGuide: () => setShowGuide(true),
           })
         }
         if (!snap) {
@@ -4939,30 +5087,29 @@ window.__ModuleLoader__.load({
         return h(
           React.Fragment,
           null,
-          error || notice || demo ? h('div', { className: 'ob-body-feedback' },
-            error ? h('div', { className: 'ob-error', role: 'alert' }, error) : null,
+          error || mailError || notice || demo ? h('div', { className: 'ob-body-feedback' },
+            error || mailError ? h('div', { className: 'ob-error', role: 'alert' }, error || mailError) : null,
             notice ? h('div', { className: 'ob-banner', role: 'status' }, notice) : null,
             demo ? h('div', { className: 'ob-banner' },
               h('span', null, t('notice.demo')),
               h('span', { className: 'ob-spacer' }),
-              h('button', { type: 'button', className: 'ob-btn primary', onClick: startConnect, disabled: busy },
-                t('action.connect'))) : null) : null,
-          code
+              h('button', { type: 'button', className: 'ob-btn primary',
+                onClick: draft.clientId.trim() ? startConnect : () => setShowGuide(true), disabled: busy },
+                t(draft.clientId.trim() ? 'action.connect' : 'guide.open'))) : null) : null,
+          (code || browserWaiting)
             ? h(ConnectPanel, {
                 t,
                 builtin: !String(draft.clientId || '').trim(),
                 code,
                 error,
                 busy,
-                paste,
-                onPasteChange: setPaste,
-                onOpenInApp: openAuthorizeInApp,
-                onOpenSystem: openAuthorizeSystem,
-                onComplete: completeAuth,
+                browserWaiting,
+                onBrowserSignIn: openBrowserSignIn,
                 onStart: startConnect,
                 onCopy: copyCode,
                 onOpen: openSignIn,
                 onOpenSettings: openSettings,
+                onOpenGuide: () => setShowGuide(true),
               })
             : null,
           view === 'todo'
@@ -4991,6 +5138,7 @@ window.__ModuleLoader__.load({
                   t, selected, busy, connected, folders, folder, filter, setFilter, focus, setFocus, category, setCategory,
                   account: snap.account?.mail || snap.account?.displayName || 'Outlook',
                   rows: folderMail ?? (folder === 'inbox' ? snap.mail ?? [] : []), unread: Number(snap.unread || 0),
+                  listUnavailable: Boolean(mailError),
                   onFolder: selectMailFolder,
                   onSelect: (row) => { setSelected(row); if (row && !row.isRead && !busy) markRead(row) },
                   onCompose: () => setCompose({ to: '', subject: '', body: '' }),
@@ -5014,6 +5162,25 @@ window.__ModuleLoader__.load({
             : null,
         )
       })()
+
+      const renderGuide = (alongsideBrowser) => h(SetupGuide, {
+        t, version: snap?.pluginVersion, connected, alongsideBrowser, busy: busy || showSettings,
+        onOpenEntra: async (url) => {
+          if (await openInApp(url)) return
+          setShowGuide(false)
+          setError(t('auth.browserUnavailable'))
+        },
+        onSettings: () => {
+          setSignInUrl(null)
+          setShowGuide(false)
+          if (!showSettings) openSettings()
+        },
+        onConnect: () => {
+          setShowGuide(false)
+          startConnect()
+        },
+        onClose: () => setShowGuide(false),
+      })
 
       return h(
         'div',
@@ -5194,12 +5361,13 @@ window.__ModuleLoader__.load({
               ),
             )
           : null,
-        showGuide ? h(SetupGuide, {
-          t, version: snap?.pluginVersion, connected, busy: busy || showSettings, onOpenEntra: openInApp,
-          onSettings: () => { setShowGuide(false); if (!showSettings) openSettings() },
-          onConnect: () => { setShowGuide(false); startConnect() },
-          onClose: () => setShowGuide(false),
-        }) : null,
+        showGuide && !signInUrl ? renderGuide(false) : null,
+        signInUrl ? h('div', {
+          className: 'ob-modal-mask ob-signin-mask ob-signin-layout',
+          role: 'dialog', 'aria-modal': true, 'aria-label': t('connect.title'),
+        },
+          renderGuide(true),
+          h(SignInBrowser, { key: signInUrl, t, url: signInUrl, onClose: () => setSignInUrl(null) })) : null,
         showUi
           ? h(AppearancePage, {
               t,
@@ -5250,21 +5418,6 @@ window.__ModuleLoader__.load({
         }
 
         try {
-          // The desktop shell owns an embedded browser whose <webview> can render
-        // Microsoft's sign-in page; the page's own window.open cannot.
-        const openInApp = (url) => {
-          try {
-            const sidebarRight = ctx.get('sidebarRight')
-            if (sidebarRight && typeof sidebarRight.openTab === 'function') {
-              sidebarRight.openTab('browser', { params: { url } })
-              return true
-            }
-          } catch (error) {
-            console.error('[outlook-bridge] in-app browser unavailable:', error)
-          }
-          return false
-        }
-
         ctx.effect(() => () => store.dispose(), 'outlook-bridge: snapshot store')
 
           ctx.slots.inject('sidebar.panellist', () =>
@@ -5284,7 +5437,7 @@ window.__ModuleLoader__.load({
               {
                 name: 'main',
                 key: PANEL_ID,
-                inject: () => ({ t: translate, openInApp }),
+                inject: () => ({ t: translate }),
               },
               MainPage,
             ),

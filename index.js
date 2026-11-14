@@ -11,9 +11,9 @@
  */
 
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
-import { createHash } from 'node:crypto'
-import { spawn } from 'node:child_process'
-import { homedir, tmpdir } from 'node:os'
+import { createHash, randomBytes } from 'node:crypto'
+import { createServer } from 'node:http'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as wait } from 'node:timers/promises'
 
@@ -57,7 +57,6 @@ const SIGNIN_URL = 'https://microsoft.com/devicelogin'
  * The panel asks the person to paste that URL back, which turns the whole
  * exchange into one copy-paste and surfaces any AADSTS error verbatim.
  */
-const NATIVE_REDIRECT = `${LOGIN_BASE}/common/oauth2/nativeclient`
 
 /**
  * Microsoft's own first-party Office public client. Signing in through it needs
@@ -119,6 +118,8 @@ const state = {
   authStatus: 'idle',
   authMessage: null,
   authTimer: null,
+  authPolling: false,
+  browserAuth: null,
   authLog: [],
   authFailures: 0,
 }
@@ -144,6 +145,17 @@ function pendingPath() {
 
 function authLogPath() {
   return join(baseDir(), 'auth-log.json')
+}
+
+async function claimFirstSetupGuide() {
+  await mkdir(baseDir(), { recursive: true })
+  try {
+    await writeFile(join(baseDir(), 'setup-guide-seen'), '', { flag: 'wx', mode: 0o600 })
+    return true
+  } catch (error) {
+    if (error?.code === 'EEXIST') return false
+    throw error
+  }
 }
 
 /**
@@ -214,7 +226,18 @@ function clamp(value, min, max) {
 
 async function saveSettings(patch) {
   await loadSettings()
+  const previousClient = clientIdOf()
+  const previousTenant = tenantOf()
+  const previousSecret = clientSecretOf()
   state.settings = { ...state.settings, ...sanitizeSettings(patch) }
+  if (previousClient !== clientIdOf() || previousTenant !== tenantOf() || previousSecret !== clientSecretOf()) {
+    state.pending = null
+    state.authStatus = 'idle'
+    state.authMessage = null
+    stopAuthPolling()
+    stopBrowserAuth()
+    await writeJson(pendingPath(), {})
+  }
   await writeJson(settingsPath(), state.settings)
   state.cache = null
   return state.settings
@@ -226,12 +249,13 @@ async function loadToken() {
   return state.token
 }
 
-async function persistToken(payload) {
-  const previous = (await loadToken()) ?? {}
+async function persistToken(payload, { deviceCode = false, refreshing = false } = {}) {
+  const previous = refreshing ? (await loadToken()) ?? {} : {}
   state.token = {
     accessToken: payload.access_token,
     refreshToken: payload.refresh_token || previous.refreshToken || '',
     scope: payload.scope || previous.scope || SCOPE,
+    deviceCode,
     expiresAt: Date.now() + Math.max(0, Number(payload.expires_in) || 3600) * 1000 - 60_000,
   }
   await writeJson(tokenPath(), state.token)
@@ -262,11 +286,21 @@ function clientIdOf() {
   return custom || BUILTIN_CLIENT_ID
 }
 
+function signInClientId() {
+  const clientId = String(state.settings?.clientId || '').trim()
+  if (clientId && clientId.toLowerCase() !== BUILTIN_CLIENT_ID &&
+      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(clientId)) return clientId
+  const error = new Error('请按「流程指引」注册 Microsoft Entra 应用，并在「设置」填写有效的应用程序（客户端）ID。')
+  error.code = 'client_id_missing'
+  throw error
+}
+
 async function postForm(url, form) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(form).toString(),
+    signal: AbortSignal.timeout(15_000),
   })
   const text = await res.text()
   let json
@@ -279,34 +313,59 @@ async function postForm(url, form) {
 }
 
 function oauthError(json, fallback) {
-  const error = new Error(json?.error_description || json?.error || fallback)
+  const detail = json?.error_description || json?.error || fallback
+  const match = String(detail).match(/AADSTS\d+/)?.[0]
+  const hints = {
+    AADSTS65002: '请在「设置」填写你自己的 Entra 应用客户端 ID，再重新授权。',
+    AADSTS700016: '请核对「应用程序（客户端）ID」和租户设置。',
+    AADSTS7000218: '设备代码登录需要在 Entra 的「身份验证」中开启「允许公共客户端流」。',
+    AADSTS700025: '此应用使用公共客户端流，请清空插件中保存的客户端密钥后重试。',
+    AADSTS50020: '请确认 Entra 应用支持你的账号类型。个人 Outlook 邮箱需要启用个人 Microsoft 帐户。',
+    AADSTS53003: '此账号的组织策略阻止了登录，请联系组织管理员。',
+    AADSTS50011: '请在 Entra 应用的「身份验证」中添加「移动和桌面应用程序」平台，登记 http://localhost。',
+  }
+  const error = new Error(hints[match] ? `${match} · ${hints[match]}` : detail)
   error.code = json?.error || 'oauth_error'
   return error
 }
 
-async function startDeviceCode() {
+function deviceVerificationUri(value) {
+  try {
+    const url = new URL(value)
+    if (url.protocol === 'https:' && !url.username && !url.password && !url.port &&
+        ['microsoft.com', 'www.microsoft.com', 'login.microsoftonline.com', 'login.microsoft.com'].includes(url.hostname) &&
+        !url.searchParams.has('otc')) return url.href
+  } catch {
+    // Use Microsoft's standard entry when the response has no usable URL.
+  }
+  return SIGNIN_URL
+}
+
+async function startDeviceCode({ restart = false } = {}) {
   await loadSettings()
-  const clientId = clientIdOf()
+  const clientId = signInClientId()
+  stopBrowserAuth()
+  const tenant = tenantOf()
   const now = Date.now()
   // Reuse a code that is still valid: a second click must not invalidate the
   // code the person is already typing into the sign-in page.
-  if (state.pending && state.pending.expiresAt > now + 30_000 && state.pending.userCode) {
+  if (!restart && state.pending && state.pending.expiresAt > now + 30_000 && state.pending.userCode) {
     state.authStatus = 'pending'
+    state.authFailures = 0
     startAuthPolling(state.pending.interval)
     noteAuth({ stage: 'devicecode-reuse', expiresIn: Math.round((state.pending.expiresAt - now) / 1000) })
     return {
       userCode: state.pending.userCode,
       verificationUri: state.pending.verificationUri,
-      verificationUriComplete: state.pending.verificationUriComplete,
-      signInUrl: state.pending.verificationUriComplete,
+      signInUrl: state.pending.verificationUri,
       expiresIn: Math.round((state.pending.expiresAt - now) / 1000),
       interval: state.pending.interval,
       reused: true,
     }
   }
   const deviceForm = { client_id: clientId, scope: SCOPE }
-  if (clientSecretOf()) deviceForm.client_secret = clientSecretOf()
-  const { status, json } = await postForm(`${LOGIN_BASE}/${tenantOf()}/oauth2/v2.0/devicecode`, deviceForm)
+  const { status, json } = await postForm(`${LOGIN_BASE}/${tenant}/oauth2/v2.0/devicecode`, deviceForm)
+  if (clientId !== clientIdOf() || tenant !== tenantOf()) throw new Error('授权配置已更改，请重新获取登录代码。')
   noteAuth({
     stage: 'devicecode',
     http: status,
@@ -318,22 +377,24 @@ async function startDeviceCode() {
   })
   if (status !== 200 || !json.device_code) throw oauthError(json, '无法获取设备代码')
   state.pending = {
+    flowVersion: 2,
+    clientId,
+    tenant,
     deviceCode: json.device_code,
     userCode: json.user_code,
-    verificationUri: SIGNIN_URL,
-    verificationUriComplete: `${SIGNIN_URL}?otc=${encodeURIComponent(json.user_code || '')}`,
+    verificationUri: deviceVerificationUri(json.verification_uri),
     interval: Number(json.interval) || 5,
     expiresAt: Date.now() + (Number(json.expires_in) || 900) * 1000,
   }
   state.authStatus = 'pending'
   state.authMessage = null
+  state.authFailures = 0
   await writeJson(pendingPath(), state.pending)
   startAuthPolling(state.pending.interval)
   return {
     userCode: json.user_code,
     verificationUri: state.pending.verificationUri,
-    verificationUriComplete: state.pending.verificationUriComplete,
-    signInUrl: state.pending.verificationUriComplete,
+    signInUrl: state.pending.verificationUri,
     expiresIn: Number(json.expires_in) || 900,
     interval: state.pending.interval,
   }
@@ -361,11 +422,13 @@ function startAuthPolling(seconds) {
 }
 
 async function authTick() {
+  if (state.authPolling) return
   if (!state.pending) {
     stopAuthPolling()
     return
   }
   let result
+  state.authPolling = true
   try {
     result = await pollDeviceCode()
     state.authFailures = 0
@@ -378,7 +441,10 @@ async function authTick() {
       stopAuthPolling()
     }
     return
+  } finally {
+    state.authPolling = false
   }
+  if (result.status === 'superseded') return
   if (result.status === 'done') {
     state.authStatus = 'done'
     state.authMessage = null
@@ -405,12 +471,15 @@ async function authTick() {
 async function resumeAuth() {
   await loadSettings()
   const saved = await readJson(pendingPath())
-  if (!saved?.deviceCode || Number(saved.expiresAt) <= Date.now()) return
+  if (saved?.flowVersion !== 2 || !saved.deviceCode || Number(saved.expiresAt) <= Date.now() ||
+      saved.clientId !== clientIdOf() || saved.tenant !== tenantOf()) return
   state.pending = {
+    flowVersion: saved.flowVersion,
+    clientId: saved.clientId,
+    tenant: saved.tenant,
     deviceCode: saved.deviceCode,
     userCode: saved.userCode ?? null,
-    verificationUri: saved.verificationUri ?? null,
-    verificationUriComplete: saved.verificationUriComplete ?? null,
+    verificationUri: deviceVerificationUri(saved.verificationUri),
     interval: Number(saved.interval) || 5,
     expiresAt: Number(saved.expiresAt),
   }
@@ -428,11 +497,11 @@ async function pollDeviceCode() {
   }
   const pollForm = {
     grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-    client_id: clientIdOf(),
+    client_id: pending.clientId,
     device_code: pending.deviceCode,
   }
-  if (clientSecretOf()) pollForm.client_secret = clientSecretOf()
-  const { status, json } = await postForm(`${LOGIN_BASE}/${tenantOf()}/oauth2/v2.0/token`, pollForm)
+  const { status, json } = await postForm(`${LOGIN_BASE}/${pending.tenant}/oauth2/v2.0/token`, pollForm)
+  if (state.pending !== pending) return { status: 'superseded' }
   noteAuth({
     stage: 'token-poll',
     http: status,
@@ -441,11 +510,11 @@ async function pollDeviceCode() {
   })
   if (status === 200 && json.access_token) {
     noteAuth({ stage: 'token-ok', scope: String(json.scope ?? '').slice(0, 200) })
-    await persistToken(json)
+    await persistToken(json, { deviceCode: true })
+    state.account = null
     state.pending = null
     state.cache = null
-    const account = await fetchAccount([])
-    return { status: 'done', account }
+    return { status: 'done' }
   }
   const error = json.error || 'unknown'
   if (error === 'authorization_pending') return { status: 'pending' }
@@ -461,7 +530,8 @@ async function pollDeviceCode() {
     state.pending = null
     return { status: 'declined', message: '授权已在浏览器中被拒绝。' }
   }
-  return { status: 'error', message: json.error_description || error }
+  state.pending = null
+  return { status: 'error', message: oauthError(json, error).message }
 }
 
 async function accessToken() {
@@ -476,10 +546,10 @@ async function accessToken() {
     refresh_token: token.refreshToken,
     scope: SCOPE,
   }
-  if (clientSecretOf()) refreshForm.client_secret = clientSecretOf()
+  if (!token.deviceCode && clientSecretOf()) refreshForm.client_secret = clientSecretOf()
   const { status, json } = await postForm(`${LOGIN_BASE}/${tenantOf()}/oauth2/v2.0/token`, refreshForm)
   if (status === 200 && json.access_token) {
-    const next = await persistToken(json)
+    const next = await persistToken(json, { deviceCode: token.deviceCode, refreshing: true })
     return next.accessToken
   }
   if (json.error === 'invalid_grant' || json.error === 'interaction_required') await clearToken()
@@ -498,6 +568,8 @@ async function connected() {
 // Outlook allows four concurrent requests per app and mailbox. Leave one slot
 // free for other clients using the same app registration.
 const GRAPH_SLOTS = 3
+const GRAPH_READ_TIMEOUT_MS = 13000
+const GRAPH_TRANSIENT_STATUSES = new Set([500, 502, 503, 504])
 let graphSlotsInUse = 0
 const graphQueue = []
 
@@ -541,16 +613,29 @@ async function graph(path, options = {}) {
   const signal = options.signal ?? AbortSignal.timeout(30_000)
   // A batch can occupy several Outlook slots even though it is one HTTP request.
   const slots = path === '/$batch' ? GRAPH_SLOTS : 1
-  await acquireGraphSlots(slots, signal)
   try {
-    return await requestGraph(path, options, signal)
+    await acquireGraphSlots(slots, signal)
+    try {
+      return await requestGraph(path, options, signal)
+    } finally {
+      graphSlotsInUse -= slots
+      drainGraphQueue()
+    }
   } catch (error) {
+    if (!options.signal && signal.aborted && (options.method ?? 'GET').toUpperCase() === 'GET') {
+      throw graphReadError(undefined, signal.reason)
+    }
     signal.throwIfAborted()
     throw error
-  } finally {
-    graphSlotsInUse -= slots
-    drainGraphQueue()
   }
+}
+
+function graphReadError(status, cause) {
+  const reason = status ? `HTTP ${status}` : cause?.name === 'TimeoutError' ? '请求超时' : '连接中断'
+  const error = new Error(`暂时无法从 Outlook 读取数据（${reason}），请稍后刷新。`, { cause })
+  error.code = 'graph_read_unavailable'
+  error.status = status
+  return error
 }
 
 async function requestGraph(path, options, signal) {
@@ -567,10 +652,22 @@ async function requestGraph(path, options, signal) {
     headers['content-type'] = 'application/json'
     init.body = JSON.stringify(options.body)
   }
+  const readOnly = init.method.toUpperCase() === 'GET'
   for (let attempt = 0; ; attempt += 1) {
-    const res = await fetch(url, init)
-    if (res.status === 204) return null
-    const text = await res.text()
+    const attemptSignal = readOnly ? AbortSignal.any([signal, AbortSignal.timeout(GRAPH_READ_TIMEOUT_MS)]) : signal
+    let res
+    let text
+    try {
+      res = await fetch(url, { ...init, signal: attemptSignal })
+      if (res.status === 204) return null
+      text = await res.text()
+    } catch (error) {
+      signal.throwIfAborted()
+      if (!readOnly || !(attemptSignal.aborted || error instanceof TypeError)) throw error
+      if (attempt >= 2) throw graphReadError(undefined, error)
+      await wait(graphRetryDelay(null, attempt), undefined, { signal })
+      continue
+    }
     let json = null
     try {
       json = text ? JSON.parse(text) : null
@@ -580,13 +677,15 @@ async function requestGraph(path, options, signal) {
     if (res.ok) return json
     const detail = json?.error?.message || json?.error_description || `Graph 请求失败（HTTP ${res.status}）`
     const throttled = res.status === 429 || /MailboxConcurrency/i.test(`${json?.error?.code ?? ''} ${detail}`)
-    if (throttled) {
+    const transientRead = readOnly && GRAPH_TRANSIENT_STATUSES.has(res.status)
+    if (throttled || transientRead) {
       const delay = graphRetryDelay(res.headers.get('retry-after'), attempt)
       if (attempt < 2 && delay <= 8000) {
         await wait(delay, undefined, { signal })
         continue
       }
     }
+    if (transientRead && !throttled) throw graphReadError(res.status)
     const error = new Error(throttled ? 'Outlook 正在限制邮箱请求，请稍后刷新。' : detail)
     error.code = throttled ? 'graph_throttled' : 'graph_error'
     error.status = res.status
@@ -1256,12 +1355,14 @@ async function fetchRange(fromIso, toIso, warnings) {
   return { calendars, events }
 }
 
-async function buildSnapshot(force) {
+async function buildSnapshot(force, mailOnly = false) {
   await loadSettings()
   const stamp = Date.now()
-  if (!force && state.cache && stamp - state.cache.at < CACHE_MS) {
-    state.lastSync = state.cache.data.syncedAt
-    return state.cache.data
+  const scope = mailOnly ? 'mail' : 'full'
+  const cached = state.cache?.[scope]
+  if (!force && cached && stamp - cached.at < CACHE_MS) {
+    state.lastSync = cached.data.syncedAt
+    return cached.data
   }
 
   const live = await connected()
@@ -1272,22 +1373,15 @@ async function buildSnapshot(force) {
     const warnings = []
     const taskWarnings = []
     const settings = state.settings
-    const start = new Date()
-    const end = new Date(start.getTime() + settings.eventDays * 86_400_000)
-    const [inbox, mail, calendar, todo] = await Promise.all([
+    const mailWarnings = []
+    const [mail, inbox, account, calendar, todo] = await Promise.all([
+      guarded(mailWarnings, '邮件列表', () => fetchFolder('inbox', settings.mailTop)),
       guarded(warnings, '收件箱统计', () => graph('/me/mailFolders/inbox?$select=displayName,unreadItemCount,totalItemCount')),
-      guarded(warnings, '邮件列表', () =>
-        graph(
-          `/me/mailFolders/inbox/messages?$top=${settings.mailTop}` +
-            '&$select=id,subject,bodyPreview,receivedDateTime,isRead,from,hasAttachments,importance,webLink' +
-            '&$orderby=receivedDateTime desc',
-        ),
-      ),
-      guarded(warnings, '日历', () => fetchCalendar(warnings, settings)),
-      guarded(taskWarnings, '同步计划失败', () => fetchTasks(taskWarnings, settings.todoLists)),
+      fetchAccount(warnings),
+      mailOnly ? null : guarded(warnings, '日历', () => fetchCalendar(warnings, settings)),
+      mailOnly ? null : guarded(taskWarnings, '同步计划失败', () => fetchTasks(taskWarnings, settings.todoLists)),
     ])
-    const mailRows = normalizeMail(mail?.value)
-    const account = await fetchAccount(warnings)
+    const mailRows = mail ?? []
     data = {
       connected: true,
       demo: false,
@@ -1295,16 +1389,17 @@ async function buildSnapshot(force) {
       unread: Number(inbox?.unreadItemCount ?? mailRows.filter((row) => !row.isRead).length),
       inboxTotal: Number(inbox?.totalItemCount ?? mailRows.length),
       mail: mailRows,
+      mailError: mailWarnings.join('；'),
       events: Array.isArray(calendar) ? calendar : normalizeEvents(calendar?.value),
       taskLists: todo?.lists ?? [],
       tasks: todo?.tasks ?? [],
       taskError: taskWarnings.join('；'),
-      warnings,
+      warnings: mailOnly ? [] : [...mailWarnings, ...warnings],
     }
   }
 
   data.syncedAt = new Date().toISOString()
-  state.cache = { at: stamp, data }
+  state.cache = { ...state.cache, [scope]: { at: stamp, data } }
   state.lastSync = data.syncedAt
   return data
 }
@@ -1480,19 +1575,14 @@ function demoSnapshot() {
 
 async function markRead(id) {
   if (!id) return { ok: false, error: '缺少邮件 id' }
-  if (String(id).startsWith('demo-')) {
-    const row = state.cache?.data?.mail?.find((item) => item.id === id)
+  const demo = String(id).startsWith('demo-')
+  if (!demo) await graph(`/me/messages/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isRead: true } })
+  for (const { data } of Object.values(state.cache ?? {})) {
+    const row = data.mail?.find((item) => item.id === id)
     if (row) row.isRead = true
-    return { ok: true, demo: true }
+    if (!demo) data.unread = Math.max(0, Number(data.unread || 0) - 1)
   }
-  await graph(`/me/messages/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isRead: true } })
-  const row = state.cache?.data?.mail?.find((item) => item.id === id)
-  if (row) row.isRead = true
-  if (state.cache?.data) {
-    state.cache.data.unread = Math.max(0, Number(state.cache.data.unread || 0) - 1)
-    state.lastSync = state.cache.data.syncedAt
-  }
-  return { ok: true }
+  return demo ? { ok: true, demo: true } : { ok: true }
 }
 
 /** Reply to one message in-thread; Graph keeps the subject, recipients and quoting. */
@@ -1838,12 +1928,15 @@ async function moveTask(input) {
 async function setTaskCompleted(listId, taskId, completed) {
   if (!taskId) return { ok: false, error: '缺少待办 id' }
   if (String(taskId).startsWith('demo-')) {
-    const row = state.cache?.data?.tasks?.find((item) => item.id === taskId)
-    if (row) {
+    let task
+    for (const { data } of Object.values(state.cache ?? {})) {
+      const row = data.tasks?.find((item) => item.id === taskId)
+      if (!row) continue
       row.completed = completed
       row.completedAt = completed ? new Date().toISOString() : null
+      task = row
     }
-    return { ok: true, demo: true, task: row }
+    return { ok: true, demo: true, task }
   }
   if (!listId) return { ok: false, error: '缺少待办列表 id' }
   const path = `/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`
@@ -1931,110 +2024,110 @@ function send(res, status, payload) {
   res.end(body)
 }
 
-/**
- * Open a sign-in URL in the system browser. Doing it on the Host side avoids
- * the page's popup blocker and the in-app browser, which cannot render
- * Microsoft's sign-in pages.
- */
-async function openExternal(url) {
-  let parsed
-  try {
-    parsed = new URL(url)
-  } catch {
-    throw new Error('登录地址无效')
-  }
-  const host = parsed.hostname.toLowerCase()
-  const allowed = ['microsoft.com', 'login.microsoft.com', 'login.microsoftonline.com', 'live.com', 'microsoftonline.com']
-  if (!allowed.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
-    throw new Error(`拒绝打开非微软域名：${host}`)
-  }
-  const options = { detached: true, stdio: 'ignore' }
-  if (process.platform === 'win32') {
-    // A URL on a `cmd` command line loses everything from its first `&`, which
-    // silently drops response_type/scope/redirect_uri. Hand the target over as
-    // an Internet Shortcut file so the command line only ever sees a path.
-    const shortcut = join(tmpdir(), `dsh-outlook-signin-${Date.now()}.url`)
-    await writeFile(shortcut, `[InternetShortcut]\r\nURL=${url}\r\n`, 'utf8')
-    spawn('cmd', ['/c', 'start', '', shortcut], options).unref()
-  } else if (process.platform === 'darwin') {
-    spawn('open', [url], options).unref()
-  } else {
-    // Linux shells pass argv verbatim; no command-line parsing is involved.
-    spawn('xdg-open', [url], options).unref()
-  }
-  return parsed.toString()
+function stopBrowserAuth() {
+  const auth = state.browserAuth
+  if (!auth) return
+  state.browserAuth = null
+  clearTimeout(auth.timeout)
+  auth.server.close()
 }
 
-/** Build the authorization-code URL for the configured client. */
-function authorizeUrl() {
-  const params = new URLSearchParams({
-    client_id: clientIdOf(),
-    response_type: 'code',
-    redirect_uri: NATIVE_REDIRECT,
-    scope: SCOPE,
-    prompt: 'select_account',
-  })
-  return `${LOGIN_BASE}/${tenantOf()}/oauth2/v2.0/authorize?${params.toString()}`
-}
-
-/**
- * Exchange the pasted redirect URL for tokens. Accepts the whole address-bar
- * URL, a bare query string, or just the code value, and returns an AAD error
- * description unchanged so the panel can show what Microsoft actually said.
- */
-async function completeAuthCode(raw) {
+async function startBrowserAuth() {
   await loadSettings()
-  const text = String(raw || '').trim()
-  if (!text) {
-    const error = new Error('请粘贴登录完成后地址栏里的整条网址')
-    error.code = 'empty_input'
-    throw error
-  }
-  const pick = (name) => {
-    const match = text.match(new RegExp(`[?&#]${name}=([^&\\s#]+)`))
-    return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : null
-  }
-  const errorCode = pick('error')
-  const errorDescription = pick('error_description')
-  let code = pick('code')
-  if (!code && !errorCode && /^[A-Za-z0-9._~-]{16,}$/.test(text)) code = text
-
-  if (errorCode) {
-    noteAuth({ stage: 'auth-code-error', error: errorCode, desc: String(errorDescription ?? '').slice(0, 300) })
-    return { ok: false, error: errorDescription || errorCode, code: errorCode }
-  }
-  if (!code) {
-    const error = new Error('这段文本里没有 code。请复制登录完成后那个空白页地址栏里的整条网址。')
-    error.code = 'no_code'
-    throw error
-  }
-
-  const codeForm = {
-    grant_type: 'authorization_code',
-    client_id: clientIdOf(),
-    code,
-    redirect_uri: NATIVE_REDIRECT,
-    scope: SCOPE,
-  }
-  if (clientSecretOf()) codeForm.client_secret = clientSecretOf()
-  const { status, json } = await postForm(`${LOGIN_BASE}/${tenantOf()}/oauth2/v2.0/token`, codeForm)
-  noteAuth({
-    stage: 'auth-code-exchange',
-    http: status,
-    error: json?.error ?? null,
-    desc: String(json?.error_description ?? '').slice(0, 300),
+  const clientId = signInClientId()
+  const tenant = tenantOf()
+  const secret = clientSecretOf()
+  stopBrowserAuth()
+  stopAuthPolling()
+  state.pending = null
+  state.authStatus = 'pending'
+  state.authMessage = null
+  const verifier = randomBytes(32).toString('base64url')
+  const nonce = randomBytes(32).toString('base64url')
+  const auth = { server: createServer(), timeout: null }
+  state.browserAuth = auth
+  let redirectUri
+  let exchanging = false
+  auth.server.on('request', async (req, res) => {
+    const reply = (status, message) => {
+      res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' })
+      res.end(message)
+    }
+    const url = URL.parse(req.url || '/', 'http://localhost')
+    if (req.method !== 'GET' || url?.pathname !== '/' ||
+        req.headers.host !== new URL(redirectUri).host || url.searchParams.get('state') !== nonce ||
+        state.browserAuth !== auth || exchanging) {
+      reply(400, '这不是当前 Outlook 授权会话。请回到插件继续。')
+      return
+    }
+    exchanging = true
+    try {
+      const browserError = url.searchParams.get('error')
+      if (browserError) throw oauthError({ error: browserError, error_description: url.searchParams.get('error_description') })
+      const code = url.searchParams.get('code')
+      if (!code) throw new Error('微软没有返回授权代码，请重新发起浏览器登录。')
+      const form = {
+        grant_type: 'authorization_code', client_id: clientId, code,
+        redirect_uri: redirectUri, code_verifier: verifier, scope: SCOPE,
+      }
+      if (secret) form.client_secret = secret
+      const { status, json } = await postForm(`${LOGIN_BASE}/${tenant}/oauth2/v2.0/token`, form)
+      if (state.browserAuth !== auth) {
+        reply(409, '这次授权已取消，请回到插件。')
+        return
+      }
+      if (status !== 200 || !json?.access_token) throw oauthError(json, '令牌交换失败')
+      await persistToken(json)
+      state.account = null
+      state.cache = null
+      state.authStatus = 'done'
+      reply(200, 'Outlook 已连接。你可以关闭此页，返回 DeepSeek Harness。')
+    } catch (error) {
+      if (state.browserAuth === auth) {
+        state.authStatus = 'error'
+        state.authMessage = error.message
+      }
+      reply(400, 'Outlook 登录未完成。请返回插件查看原因。')
+    } finally {
+      if (state.browserAuth === auth) stopBrowserAuth()
+    }
   })
-  if (status === 200 && json?.access_token) {
-    await persistToken(json)
-    state.authStatus = 'done'
-    state.authMessage = null
-    state.cache = null
-    const account = await fetchAccount([])
-    return { ok: true, connected: true, account }
-  }
-  return { ok: false, error: json?.error_description || json?.error || '令牌交换失败' }
-}
 
+  try {
+    await writeJson(pendingPath(), {})
+    await new Promise((resolve, reject) => {
+      auth.server.once('error', reject)
+      auth.server.listen(0, 'localhost', resolve)
+    })
+    if (state.browserAuth !== auth) {
+      auth.server.close()
+      throw new Error('这次授权已取消。')
+    }
+    redirectUri = `http://localhost:${auth.server.address().port}`
+    auth.server.unref()
+    auth.timeout = setTimeout(() => {
+      if (state.browserAuth !== auth) return
+      state.authStatus = 'error'
+      state.authMessage = '浏览器授权已超时，请重新打开登录页。'
+      stopBrowserAuth()
+    }, 10 * 60_000)
+    auth.timeout.unref()
+    const params = new URLSearchParams({
+      client_id: clientId, response_type: 'code', response_mode: 'query',
+      redirect_uri: redirectUri, scope: SCOPE, prompt: 'login', state: nonce,
+      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+      code_challenge_method: 'S256',
+    })
+    return `${LOGIN_BASE}/${tenant}/oauth2/v2.0/authorize?${params}`
+  } catch (error) {
+    if (state.browserAuth === auth) {
+      state.authStatus = 'error'
+      state.authMessage = error.message
+      stopBrowserAuth()
+    }
+    throw error
+  }
+}
 function loopbackHost(host) {  const hostname = String(host || '')
     .replace(/:\d+$/, '')
     .replace(/^\[/, '')
@@ -2133,7 +2226,7 @@ export function apply(ctx, config) {
   })()
 
   ctx.effect(
-    () => () => stopAuthPolling(),
+    () => () => { stopAuthPolling(); stopBrowserAuth() },
     'outlook-bridge: sign-in polling',
   )
 
@@ -2157,10 +2250,16 @@ export function apply(ctx, config) {
     const method = String(req.method || 'GET').toUpperCase()
 
     try {
+      if (route === '/setup-guide/first-open' && method === 'POST') {
+        send(res, 200, { ok: true, show: await claimFirstSetupGuide() })
+        return
+      }
+
       if (route === '/state' && method === 'GET') {
         await loadSettings()
         const live = await connected()
-        const account = live ? await fetchAccount([]) : null
+        const includeAccount = new URL(req.url || '/', 'http://x').searchParams.get('account') !== '0'
+        const account = live && includeAccount ? await fetchAccount([]) : null
         send(res, 200, {
           ok: true,
           connected: live,
@@ -2179,12 +2278,18 @@ export function apply(ctx, config) {
             appearance: state.settings.appearance,
           },
           pending: state.pending
-            ? { active: true, expiresAt: new Date(state.pending.expiresAt).toISOString() }
+            ? {
+                active: true,
+                expiresAt: new Date(state.pending.expiresAt).toISOString(),
+                userCode: state.pending.userCode,
+                signInUrl: state.pending.verificationUri,
+              }
             : { active: false },
           auth: {
             status: state.authStatus,
             message: state.authMessage,
-            pending: Boolean(state.pending),
+            pending: Boolean(state.pending || state.browserAuth),
+            browserPending: Boolean(state.browserAuth),
           },
           lastSync: state.lastSync,
         })
@@ -2199,41 +2304,22 @@ export function apply(ctx, config) {
       }
 
       if (route === '/connect/start' && method === 'POST') {
-        const info = await startDeviceCode()
+        const body = await readBody(req)
+        const info = await startDeviceCode({ restart: body?.restart === true })
         send(res, 200, { ok: true, ...info })
         return
       }
 
-      if (route === '/auth/url' && method === 'GET') {
-        const url = authorizeUrl()
+      if (route === '/auth/open' && method === 'POST') {
+        const url = await startBrowserAuth()
         send(res, 200, { ok: true, url })
         return
       }
 
-      if (route === '/auth/open' && method === 'POST') {
-        const url = authorizeUrl()
-        const opened = await openExternal(url)
-        noteAuth({ stage: 'open-authorize', url: opened })
-        send(res, 200, { ok: true, url: opened })
-        return
-      }
-
-      if (route === '/auth/complete' && method === 'POST') {
-        const body = await readBody(req)
-        const result = await completeAuthCode(body?.text ?? body?.url)
-        send(res, 200, result)
-        return
-      }
-
       if (route === '/connect/open' && method === 'POST') {
-        const body = await readBody(req).catch(() => ({}))
-        const target =
-          (typeof body?.url === 'string' && body.url) ||
-          state.pending?.verificationUriComplete ||
-          `${SIGNIN_URL}?otc=${encodeURIComponent(state.pending?.userCode || '')}`
-        const opened = await openExternal(target)
-        noteAuth({ stage: 'open-signin', url: opened })
-        send(res, 200, { ok: true, url: opened })
+        await readBody(req)
+        const url = deviceVerificationUri(state.pending?.verificationUri)
+        send(res, 200, { ok: true, url })
         return
       }
 
@@ -2249,6 +2335,7 @@ export function apply(ctx, config) {
       }
 
       if (route === '/disconnect' && method === 'POST') {
+        stopBrowserAuth()
         await clearToken()
         send(res, 200, { ok: true })
         return
@@ -2257,8 +2344,20 @@ export function apply(ctx, config) {
       if (route === '/snapshot' && method === 'GET') {
         const url = new URL(req.url || '/', 'http://x')
         const force = url.searchParams.get('refresh') === '1'
-        const data = await buildSnapshot(force)
+        const data = await buildSnapshot(force, url.searchParams.get('scope') === 'mail')
         send(res, 200, { ok: true, ...data, pluginVersion: await pluginVersion })
+        return
+      }
+
+      if (route === '/tasks' && method === 'GET') {
+        await loadSettings()
+        const warnings = []
+        const live = await connected()
+        const demo = !live && state.settings.demo ? await buildSnapshot(false, true) : null
+        const todo = live
+          ? await guarded(warnings, '同步计划失败', () => fetchTasks(warnings, state.settings.todoLists))
+          : demo && { lists: demo.taskLists, tasks: demo.tasks }
+        send(res, 200, { ok: true, taskLists: todo?.lists ?? [], tasks: todo?.tasks ?? [], taskError: warnings.join('；') })
         return
       }
 

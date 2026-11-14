@@ -1,6 +1,6 @@
 {
   "name": "dsh-outlook-bridge",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Outlook mail, calendar and Microsoft To Do for DeepSeek Harness, with AI translation and draft assistance.",
   "type": "module",
   "main": "index.js",
